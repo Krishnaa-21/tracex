@@ -37,7 +37,11 @@ export default function Login() {
         throw new Error("Invalid response from authorization server");
       }
     } catch (err) {
-      setError(err.message || "Authentication failed. Check your badge ID and password.");
+      let msg = err.message || "Authentication failed. Check your badge ID and password.";
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || err.name === "TypeError") {
+        msg = "Unable to connect to TraceX backend server. Please verify the backend is running on http://localhost:8000.";
+      }
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

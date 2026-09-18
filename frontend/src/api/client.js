@@ -15,7 +15,6 @@ export const setOfficer = (officer) => {
 };
 
 export async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
   const token = getToken();
 
   const headers = {
@@ -34,44 +33,77 @@ export async function request(endpoint, options = {}) {
     }
   }
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+  const cleanEndpoint = endpoint.replace(/^\//, "");
+  const primaryBase = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+  
+  // Build candidate URL list to seamlessly handle IPv4/IPv6 and proxy fallbacks
+  const candidateBases = [primaryBase];
+  if (primaryBase.includes("localhost:8000")) {
+    candidateBases.push("http://127.0.0.1:8000/api", "/api");
+  } else if (primaryBase.includes("127.0.0.1:8000")) {
+    candidateBases.push("http://localhost:8000/api", "/api");
+  } else if (primaryBase === "/api") {
+    candidateBases.push("http://127.0.0.1:8000/api", "http://localhost:8000/api");
+  }
 
-    if (response.status === 401) {
-      clearAuth();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
-      throw new Error("Session expired or invalid credentials. Please log in.");
-    }
+  let lastError = null;
 
-    if (!response.ok) {
-      let errorDetail = `Request failed (${response.status})`;
-      try {
-        const errorJson = await response.json();
-        errorDetail = errorJson.detail || errorDetail;
-      } catch {
-        // Not JSON
+  for (let i = 0; i < candidateBases.length; i++) {
+    const baseUrl = candidateBases[i];
+    const url = `${baseUrl}/${cleanEndpoint}`;
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      if (response.status === 401) {
+        clearAuth();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        throw new Error("Session expired or invalid credentials. Please log in.");
       }
-      const err = new Error(errorDetail);
-      err.status = response.status;
+
+      if (!response.ok) {
+        let errorDetail = `Request failed (${response.status})`;
+        try {
+          const errorJson = await response.json();
+          errorDetail = errorJson.detail || errorDetail;
+        } catch {
+          // Not JSON
+        }
+        const err = new Error(errorDetail);
+        err.status = response.status;
+        throw err;
+      }
+
+      // Check if response is PDF or JSON
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/pdf")) {
+        return response;
+      }
+
+      // Default to JSON
+      return await response.json();
+    } catch (err) {
+      lastError = err;
+      const isNetworkError =
+        err.name === "TypeError" ||
+        err.message.includes("fetch") ||
+        err.message.includes("NetworkError") ||
+        err.message.includes("Failed to fetch");
+
+      // Only retry on network/connection failure, not HTTP errors like 401, 404, etc.
+      if (isNetworkError && i < candidateBases.length - 1) {
+        continue;
+      }
       throw err;
     }
-
-    // Check if response is PDF or JSON
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/pdf")) {
-      return response;
-    }
-
-    // Default to JSON
-    return await response.json();
-  } catch (err) {
-    throw err;
   }
+
+  throw lastError;
 }
 
 export const apiClient = {
