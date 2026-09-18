@@ -187,12 +187,17 @@ export default function NetworkGraph({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeFinding, setActiveFinding] = useState(null);
 
-  // Zoom & Pan State
+  // Zoom, Pan & Drag Pinning State
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [clusterPositions, setClusterPositions] = useState({});
+  const [draggedCluster, setDraggedCluster] = useState(null);
+  const [hoveredClusterId, setHoveredClusterId] = useState(null);
   const containerRef = useRef(null);
+  const svgRef = useRef(null);
+  const touchDistRef = useRef(null);
 
   // Compute cluster aggregations dynamically from real backend nodes and edges
   const clustersData = useMemo(() => {
@@ -242,8 +247,11 @@ export default function NetworkGraph({
       // 7 positions evenly distributed starting at top (-90 degrees)
       const angle = -Math.PI / 2 + index * ((2 * Math.PI) / 7);
       const radius = 245;
-      const x = 500 + radius * Math.cos(angle);
-      const y = 340 + radius * Math.sin(angle);
+      const defaultX = 500 + radius * Math.cos(angle);
+      const defaultY = 340 + radius * Math.sin(angle);
+      const userPos = clusterPositions[config.id];
+      const x = userPos ? userPos.x : defaultX;
+      const y = userPos ? userPos.y : defaultY;
 
       return {
         ...config,
@@ -256,7 +264,7 @@ export default function NetworkGraph({
         angle,
       };
     });
-  }, [nodes, edges]);
+  }, [nodes, edges, clusterPositions]);
 
   // Overall Stat Cards numbers
   const summaryStats = useMemo(() => {
@@ -291,13 +299,27 @@ export default function NetworkGraph({
   }, [clustersData, selectedClusterId]);
 
   // Handle Zoom & Pan controls
-  const handleZoomIn = () => setZoom((z) => Math.min(2.2, z + 0.15));
-  const handleZoomOut = () => setZoom((z) => Math.max(0.6, z - 0.15));
+  const handleZoomIn = () => setZoom((z) => Math.min(2.5, Number((z + 0.15).toFixed(2))));
+  const handleZoomOut = () => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))));
   const handleResetView = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setClusterPositions({});
     setActiveHop("overview");
   };
+
+  // Attach native non-passive wheel listener to container for smooth zooming
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.09 : 0.09;
+      setZoom((z) => Math.min(2.5, Math.max(0.5, Number((z + delta).toFixed(2)))));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
@@ -320,7 +342,15 @@ export default function NetworkGraph({
     setIsSidePanelOpen(true);
   };
 
-  // Mouse pan handlers for SVG canvas
+  // Cluster node drag start (pins the node and prevents physics drift)
+  const handleClusterMouseDown = (clusterId, e) => {
+    e.stopPropagation();
+    setSelectedClusterId(clusterId);
+    setIsSidePanelOpen(true);
+    setDraggedCluster(clusterId);
+  };
+
+  // Mouse pan & drag handlers for SVG canvas
   const handleMouseDown = (e) => {
     if (e.target.closest(".interactive-node") || e.target.closest(".floating-panel")) {
       return;
@@ -330,17 +360,61 @@ export default function NetworkGraph({
   };
 
   const handleMouseMove = (e) => {
+    if (draggedCluster && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const svgX = ((e.clientX - rect.left) / rect.width) * 1000;
+      const svgY = ((e.clientY - rect.top) / rect.height) * 680;
+      const worldX = (svgX - (500 + pan.x)) / zoom + 500;
+      const worldY = (svgY - (340 + pan.y)) / zoom + 340;
+      setClusterPositions((prev) => ({
+        ...prev,
+        [draggedCluster]: {
+          x: Math.max(70, Math.min(930, Math.round(worldX))),
+          y: Math.max(70, Math.min(610, Math.round(worldY))),
+        },
+      }));
+      return;
+    }
     if (!isDragging) return;
     setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDraggedCluster(null);
+  };
 
-  // Wheel zoom handler
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.08 : 0.08;
-    setZoom((z) => Math.min(2.2, Math.max(0.6, z + delta)));
+  // Touch handlers for mobile pinch-to-zoom and panning
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchDistRef.current = dist;
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && touchDistRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / touchDistRef.current;
+      setZoom((z) => Math.min(2.5, Math.max(0.5, Number((z * ratio).toFixed(2)))));
+      touchDistRef.current = dist;
+    } else if (e.touches.length === 1 && isDragging) {
+      setPan({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchDistRef.current = null;
+    setIsDragging(false);
   };
 
   // Pre-calculated cross-cluster multi-hop lines for 1 Hop / 2 Hops / 3 Hops visualization
@@ -526,7 +600,9 @@ export default function NetworkGraph({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className="relative w-full h-[660px] rounded-2xl border border-slate-800 bg-[#070B14] overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-2xl"
       >
         {/* Subtle radial aura & grid lines */}
@@ -540,6 +616,7 @@ export default function NetworkGraph({
 
         {/* SVG Graph Surface */}
         <svg
+          ref={svgRef}
           viewBox="0 0 1000 680"
           className="w-full h-full"
           style={{ touchAction: "none" }}
@@ -600,10 +677,12 @@ export default function NetworkGraph({
             {/* Connecting Spoke Edges between Center and Each Cluster */}
             {clustersData.map((cluster) => {
               const isSelected = selectedClusterId === cluster.id;
+              const isHovered = hoveredClusterId === cluster.id;
               const cx = 500;
               const cy = 340;
-              const midX = (cx + cluster.x) / 2;
-              const midY = (cy + cluster.y) / 2;
+              // Position link badge at 42% distance to keep clean clearance from cluster circle
+              const midX = cx + (cluster.x - cx) * 0.42;
+              const midY = cy + (cluster.y - cy) * 0.42;
 
               return (
                 <g key={`edge-${cluster.id}`}>
@@ -618,8 +697,12 @@ export default function NetworkGraph({
                     strokeOpacity={isSelected ? "0.9" : "0.55"}
                   />
 
-                  {/* Midpoint Pill Badge showing Link Count */}
-                  <g transform={`translate(${midX}, ${midY})`}>
+                  {/* Midpoint Pill Badge showing Link Count (anti-overlap clearance) */}
+                  <g
+                    transform={`translate(${midX}, ${midY})`}
+                    className="transition-opacity duration-200"
+                    opacity={zoom < 0.65 && !isSelected && !isHovered ? 0.3 : 1}
+                  >
                     <rect
                       x="-38"
                       y="-11"
@@ -649,16 +732,19 @@ export default function NetworkGraph({
             {clustersData.map((cluster) => {
               const isExpanded = expandedClusters.has(cluster.id);
               if (!isExpanded) return null;
+              const isSelected = selectedClusterId === cluster.id;
+              const isHovered = hoveredClusterId === cluster.id || isSelected;
 
               return (
                 <g key={`expanded-${cluster.id}`}>
                   {cluster.topEntities.slice(0, 6).map((ent, entIdx) => {
-                    // Place mini entities in a fan-out orbit around the cluster
                     const count = Math.min(cluster.topEntities.length, 6);
+                    // Alternating staggered radius to avoid label overlap
+                    const childRadius = entIdx % 2 === 0 ? 100 : 128;
                     const fanAngle =
-                      cluster.angle - Math.PI / 2.5 + (entIdx * (Math.PI / 1.5)) / Math.max(count - 1, 1);
-                    const entX = cluster.x + 85 * Math.cos(fanAngle);
-                    const entY = cluster.y + 85 * Math.sin(fanAngle);
+                      cluster.angle - Math.PI / 2.3 + (entIdx * (Math.PI / 1.15)) / Math.max(count - 1, 1);
+                    const entX = cluster.x + childRadius * Math.cos(fanAngle);
+                    const entY = cluster.y + childRadius * Math.sin(fanAngle);
 
                     const entRiskColor =
                       ent.risk === "high"
@@ -677,6 +763,7 @@ export default function NetworkGraph({
                           setIsSidePanelOpen(true);
                         }}
                       >
+                        <title>{ent.value} ({ent.risk} risk, {ent.connections} connections)</title>
                         {/* Spoke line from cluster to child */}
                         <line
                           x1={cluster.x}
@@ -698,18 +785,19 @@ export default function NetworkGraph({
                           strokeWidth="2"
                         />
                         <circle cx={entX} cy={entY} r="4" fill={entRiskColor} />
-                        {/* Text label */}
+                        {/* Text label with anti-overlap truncation & zoom sensitivity */}
                         <text
                           x={entX}
                           y={entY + 24}
                           textAnchor="middle"
                           fill="#E2E8F0"
-                          fontSize="9"
+                          fontSize="8.5"
                           fontFamily="monospace"
-                          className="pointer-events-none"
+                          className="pointer-events-none transition-opacity duration-200"
+                          opacity={zoom < 0.75 && !isHovered ? 0 : 1}
                         >
-                          {ent.value.length > 14
-                            ? ent.value.slice(0, 13) + "…"
+                          {ent.value.length > 13
+                            ? ent.value.slice(0, 12) + "…"
                             : ent.value}
                         </text>
                       </g>
@@ -789,26 +877,31 @@ export default function NetworkGraph({
             {clustersData.map((cluster) => {
               const isSelected = selectedClusterId === cluster.id;
               const isExpanded = expandedClusters.has(cluster.id);
+              const isHovered = hoveredClusterId === cluster.id;
               const IconComponent = cluster.icon;
 
               return (
                 <g
                   key={cluster.id}
                   transform={`translate(${cluster.x}, ${cluster.y})`}
-                  className="interactive-node cursor-pointer transition-transform duration-200 hover:scale-105"
+                  className="interactive-node cursor-grab active:cursor-grabbing transition-transform duration-150 hover:scale-105"
+                  onMouseDown={(e) => handleClusterMouseDown(cluster.id, e)}
+                  onMouseEnter={() => setHoveredClusterId(cluster.id)}
+                  onMouseLeave={() => setHoveredClusterId(null)}
                   onClick={() => {
                     setSelectedClusterId(cluster.id);
                     setIsSidePanelOpen(true);
                   }}
                 >
+                  <title>{cluster.name}: {cluster.count} entities, {cluster.highRisk} high risk</title>
                   {/* Outer active pulse ring if selected */}
                   {isSelected && (
                     <circle
                       r="46"
                       fill="none"
                       stroke={cluster.color}
-                      strokeWidth="1.8"
-                      strokeOpacity="0.4"
+                      strokeWidth="2"
+                      strokeOpacity="0.5"
                       strokeDasharray="4 3"
                     />
                   )}
@@ -834,7 +927,7 @@ export default function NetworkGraph({
                   <g
                     transform="translate(24, -24)"
                     onClick={(e) => toggleExpandCluster(cluster.id, e)}
-                    className="hover:scale-110 transition-transform"
+                    className="hover:scale-110 transition-transform cursor-pointer"
                   >
                     <circle
                       r="9"
@@ -853,7 +946,7 @@ export default function NetworkGraph({
                     </text>
                   </g>
 
-                  {/* Below-node text details */}
+                  {/* Below-node text details with dynamic anti-overlap density */}
                   {/* Category Name */}
                   <text
                     y="52"
@@ -861,23 +954,30 @@ export default function NetworkGraph({
                     fill="#F8FAFC"
                     fontSize="11.5"
                     fontWeight="700"
+                    className="pointer-events-none"
                   >
                     {cluster.name}
                   </text>
 
-                  {/* Entity Count */}
+                  {/* Entity Count (Dynamic visibility at low zoom) */}
                   <text
                     y="66"
                     textAnchor="middle"
                     fill="#94A3B8"
                     fontSize="9.5"
                     fontWeight="500"
+                    className="pointer-events-none transition-opacity duration-200"
+                    opacity={zoom < 0.75 && !isSelected && !isHovered ? 0 : 1}
                   >
                     {cluster.count} entities
                   </text>
 
-                  {/* High Risk Pill Badge */}
-                  <g transform="translate(0, 74)">
+                  {/* High Risk Pill Badge (Dynamic visibility at low zoom) */}
+                  <g
+                    transform="translate(0, 74)"
+                    className="transition-opacity duration-200"
+                    opacity={zoom < 0.75 && !isSelected && !isHovered ? 0 : 1}
+                  >
                     <rect
                       x="-38"
                       y="0"
@@ -1204,6 +1304,9 @@ export default function NetworkGraph({
             >
               <Plus className="w-4 h-4" />
             </button>
+            <div className="py-1 px-1.5 text-[9.5px] font-mono text-center text-slate-400 font-semibold border-b border-slate-800/80 select-none bg-[#050914]">
+              {Math.round(zoom * 100)}%
+            </div>
             <button
               onClick={handleZoomOut}
               className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors border-b border-slate-800/80 cursor-pointer"
@@ -1214,7 +1317,7 @@ export default function NetworkGraph({
             <button
               onClick={handleResetView}
               className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
-              title="Center View"
+              title="Fit to View / Reset Positions"
             >
               <Crosshair className="w-4 h-4" />
             </button>

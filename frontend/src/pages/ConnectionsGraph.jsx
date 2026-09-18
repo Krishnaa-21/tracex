@@ -214,41 +214,52 @@ export default function ConnectionsGraph() {
           </div>
 
           {summaryData ? (
-            <div className="grid md:grid-cols-2 gap-px bg-border rounded-lg overflow-hidden">
-              {[
-                "What is happening?",
-                "How are they connected?",
-                "What stands out?",
-                "Key takeaway",
-              ].map((heading, idx) => (
-                <div
-                  key={heading}
-                  className="bg-bg p-4 text-[12px] text-textDim leading-relaxed"
-                >
-                  <h4 className="text-accent font-bold text-[11px] uppercase tracking-wide mb-1">
-                    {heading}
-                  </h4>
-                  <p>
-                    {summaryData.narrative_text
-                      .split("\n\n")
-                      .filter((p) => p.trim())[idx] ||
-                      (idx === 3
-                        ? "Follow the highlighted trail and begin with the priority targets."
-                        : "This part of the story is still being refined from the evidence.")}
-                  </p>
+            <div className="bg-bg/70 border border-border/80 rounded-xl p-5 shadow-inner space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-accent" />
                 </div>
-              ))}
-              <div className="pt-2 border-t border-border flex items-center justify-between text-[10px] text-textFaint col-span-full">
-                <span>
-                  Model:{" "}
-                  {summaryData.model_version || "Deterministic Narrative"}
-                </span>
-                <span className="font-mono">
+                <div className="space-y-3 flex-1">
+                  <p className="text-[13px] leading-relaxed text-text font-normal whitespace-pre-line selection:bg-accent/20">
+                    {summaryData.narrative_text}
+                  </p>
+
+                  {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
+                    <div className="pt-2 border-t border-border/60 flex flex-wrap gap-2 items-center">
+                      <span className="text-[11px] font-semibold text-textFaint uppercase tracking-wider">
+                        Key Directives:
+                      </span>
+                      {summaryData.key_takeaways.map((takeaway, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 text-accent text-[11px] font-medium border border-accent/20"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                          {takeaway}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[11px] text-textFaint">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>
+                    Synthesized via{" "}
+                    <span className="font-semibold text-textDim">
+                      {summaryData.model_version || "Deterministic Narrative"}
+                    </span>
+                  </span>
+                </div>
+                <span className="font-mono text-textDim">
                   {summaryData.generated_at
-                    ? new Date(summaryData.generated_at).toLocaleTimeString([], {
+                    ? `Generated at ${new Date(summaryData.generated_at).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })
+                        second: "2-digit",
+                      })}`
                     : ""}
                 </span>
               </div>

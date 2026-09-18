@@ -50,10 +50,11 @@ Analyze the following evidence correlation graph and write an authoritative, pla
 {chr(10).join(edge_lines) if edge_lines else 'No links established yet.'}
 
 === REQUIRED OUTPUT STRUCTURE ===
-Write exactly 2 to 3 short paragraphs in formal, factual investigative style:
-1. Executive Incident Overview: What happened, how the victim was defrauded, and the operational modus operandi identified from the technical artifacts.
-2. Critical Infrastructure & Mule Network: Which specific entities matter most (identifying primary beneficiary accounts, mule UPI handles, C2 endpoints, or reused IMEIs) and explain why based on link confidence. Mention any cross-case connections.
-3. Priority Officer Directives: Concrete next steps the Investigating Officer should immediately execute (e.g. Section 91 CrPC notice to specific banks/payment aggregators to freeze funds, CDR/tower dump requisition for specific IMEIs, or CERT-In takedown).
+Write a single, cohesive, plain-language investigative narrative (one unified summary block of 3-5 smooth sentences). Avoid technical jargon, complex acronyms, or fragmented sub-headings.
+Explain clearly:
+1. Exactly what happened to the victim and the operational method used.
+2. The key fraudulent entities identified (the main phone number used, beneficiary bank account/UPI handle, or fake website).
+3. The core finding (whether linked to known criminal syndicates or other complaints) and the immediate next step the officer should take.
 """
     return prompt
 
@@ -63,82 +64,63 @@ def generate_fallback_summary(
     nodes: List[Dict[str, Any]],
     edges: List[Dict[str, Any]],
 ) -> str:
-    """Deterministic fallback narrative for offline execution without requiring an LLM API key."""
+    """Deterministic, unified plain-language summary for investigating officers without requiring an LLM API key."""
     scam_type_str = case.scam_type.value if hasattr(case.scam_type, "value") else str(case.scam_type)
     scam_label = scam_type_str.replace("_", " ").title()
-    risk_level_str = case.risk_level.value if hasattr(case.risk_level, "value") and case.risk_level else (str(case.risk_level) if case.risk_level else "Moderate")
-    score_str = f"{case.risk_score:.0f}/100" if case.risk_score is not None else "Pending"
-    district_str = case.district or "Central Jurisdiction"
+    district_str = case.district or "the jurisdiction"
 
-    # Identify notable entities
+    # Identify primary entities
     upi_entities = [n["label"] for n in nodes if n["entity_type"] == "upi_handle"]
     acc_entities = [n["label"] for n in nodes if n["entity_type"] == "account"]
+    phone_entities = [n["label"] for n in nodes if n["entity_type"] == "phone"]
     imei_entities = [n["label"] for n in nodes if n["entity_type"] == "imei"]
     c2_entities = [n["label"] for n in nodes if "c2" in (n.get("anomaly_reason") or "").lower()]
-    high_risk_nodes = [n["label"] for n in nodes if n.get("risk_level") == "high"]
-
-    # Identify cross-case edges
+    url_entities = [n["label"] for n in nodes if n["entity_type"] == "url"]
     cross_case_edges = [e for e in edges if e.get("extra", {}).get("cross_case")]
 
-    # Paragraph 1: What happened
-    p1 = (
-        f"Investigation into case {case.case_number} concerning victim {case.victim_name} in {district_str} "
-        f"establishes an active {scam_label} operation. The case has been assessed at {risk_level_str.upper()} risk "
-        f"({score_str}) driven by {case.why_flagged or 'dense technical correlation across submitted digital artifacts'}. "
-        f"Automated evidence normalization ingested {len(nodes)} distinct technical entities across telecom, settlement, "
-        f"and application artifacts, generating {len(edges)} confirmed cross-evidence relationship links."
-    )
-
-    # Paragraph 2: Which entities matter most and why
-    notable_items = []
-    if upi_entities and acc_entities:
-        notable_items.append(f"primary mule beneficiary handle {upi_entities[0]}, directly linked to settlement account {acc_entities[0]} with 0.95 correlation confidence")
-    elif upi_entities:
-        notable_items.append(f"fraudulent payment handle {upi_entities[0]}")
-
-    if imei_entities:
-        notable_items.append(f"suspect hardware device identified by IMEI {imei_entities[0]}")
-
-    if c2_entities:
-        notable_items.append(f"command-and-control endpoint {c2_entities[0]} flagged for persistent exfiltration")
-
-    if cross_case_edges:
-        matched_num = cross_case_edges[0].get("extra", {}).get("matched_case_number", "another complaint")
-        notable_items.append(f"a direct operational overlap matching ongoing investigation {matched_num}")
-
-    entities_narrative = (
-        f"Analysis indicates critical focal nodes centered around {'; '.join(notable_items)}. "
-        if notable_items
-        else f"Correlation highlights {len(high_risk_nodes)} high-priority indicators exhibiting shared infrastructure patterns. "
-    )
-
-    p2 = (
-        f"The forensic graph identifies systematic operational layering. {entities_narrative}"
-        f"The high confidence scores indicate these identifiers represent organized syndicated fraud infrastructure "
-        f"rather than isolated opportunistic activity."
-    )
-
-    # Paragraph 3: Recommended officer directives
-    directives = []
+    # Core key suspect elements
+    suspect_elements = []
+    if phone_entities:
+        suspect_elements.append(f"calling line {phone_entities[0]}")
     if upi_entities:
-        directives.append(f"immediately serve Section 91 CrPC freezing directives to the payment service provider for UPI handle {upi_entities[0]}")
+        suspect_elements.append(f"UPI handle {upi_entities[0]}")
     if acc_entities:
-        directives.append(f"request emergency debit-freeze and KYC/audit trail extraction for bank account {acc_entities[0]}")
-    if imei_entities:
-        directives.append(f"requisition cellular CDR and tower triangulation for IMEI {imei_entities[0]} across telecom service providers")
+        suspect_elements.append(f"bank account {acc_entities[0]}")
+    if url_entities:
+        suspect_elements.append(f"phishing portal {url_entities[0]}")
     if c2_entities:
-        directives.append(f"submit IP/domain blocking requisition to CERT-In / DoT for endpoint {c2_entities[0]}")
+        suspect_elements.append(f"malicious server {c2_entities[0]}")
 
-    if not directives:
-        directives.append("proceed with formal nodal escalation and subscriber identification requisitions")
+    suspect_summary = ", ".join(suspect_elements[:3]) if suspect_elements else "multiple linked communication and settlement endpoints"
 
-    p3 = (
-        f"The Investigating Officer is advised to prioritise: 1) {directives[0]}; "
-        + (f"2) {directives[1]}; " if len(directives) > 1 else "")
-        + (f"3) {directives[2]}." if len(directives) > 2 else "and initiate inter-state cyber cell coordination.")
+    # Syndicate & Cross-case note
+    syndicate_note = ""
+    if cross_case_edges:
+        matched_case = cross_case_edges[0].get("extra", {}).get("matched_case_number", "another active complaint")
+        syndicate_note = f" Evidence correlation confirms direct operational overlap with ongoing investigation {matched_case}, indicating an active syndicated fraud ring."
+    else:
+        syndicate_note = " Technical analysis shows coordinated multi-hop fund routing designed to rapidly disperse proceeds across intermediary accounts."
+
+    # Immediate priority directive
+    action_note = ""
+    if upi_entities and acc_entities:
+        action_note = f" The Investigating Officer should immediately issue a Section 91 CrPC freeze directive on UPI handle {upi_entities[0]} and request an emergency debit-freeze on bank account {acc_entities[0]}."
+    elif upi_entities:
+        action_note = f" The Investigating Officer should immediately issue a Section 91 CrPC freeze directive on UPI handle {upi_entities[0]} to prevent further fund dissipation."
+    elif acc_entities:
+        action_note = f" The Investigating Officer should immediately request an emergency debit-freeze on beneficiary account {acc_entities[0]}."
+    elif phone_entities:
+        action_note = f" The Investigating Officer should requisition call records and subscriber details for primary number {phone_entities[0]}."
+    else:
+        action_note = " The Investigating Officer is advised to initiate immediate nodal freezing requisitions on the primary settlement nodes."
+
+    unified_narrative = (
+        f"Victim {case.victim_name} in {district_str} was targeted in an organized {scam_label} operation. "
+        f"The perpetrators coordinated the fraud through {suspect_summary} across {len(nodes)} identified digital identifiers and {len(edges)} confirmed connections.{syndicate_note}\n\n"
+        f"Immediate Action Recommendation:{action_note}"
     )
 
-    return f"{p1}\n\n{p2}\n\n{p3}"
+    return unified_narrative
 
 
 def generate_case_summary(case_id: int, db: Session) -> CaseSummary:

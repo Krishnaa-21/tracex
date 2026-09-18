@@ -7,6 +7,7 @@ from app.api.routes.auth import get_current_officer
 from app.services.reports.pdf_generator import (
     generate_investigative_brief,
     generate_takedown_request,
+    get_report_preview_data,
 )
 
 router = APIRouter(prefix="/cases", tags=["reports"])
@@ -105,4 +106,18 @@ def get_takedown_matches(
         "apk_matches": hash_matches,
         "total_matches": url_matches + hash_matches,
     }
+
+
+@router.get("/{case_id}/reports/preview")
+def get_case_reports_preview(
+    case_id: int,
+    db: Session = Depends(get_db),
+    current_officer: Officer = Depends(get_current_officer),
+):
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    preview_data = get_report_preview_data(case_id, db)
+    return preview_data
 
