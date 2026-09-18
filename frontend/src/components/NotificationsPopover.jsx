@@ -52,6 +52,37 @@ const INITIAL_NOTIFICATIONS = [
   },
 ];
 
+const TYPE_CONFIG = {
+  urgent: {
+    Icon: AlertTriangle,
+    color: "#FF3B5C",
+    bg: "rgba(255,59,92,0.12)",
+    border: "rgba(255,59,92,0.25)",
+    glow: "rgba(255,59,92,0.30)",
+  },
+  correlation: {
+    Icon: Network,
+    color: "#00D4FF",
+    bg: "rgba(0,212,255,0.10)",
+    border: "rgba(0,212,255,0.22)",
+    glow: "rgba(0,212,255,0.25)",
+  },
+  threat: {
+    Icon: ShieldAlert,
+    color: "#F59E0B",
+    bg: "rgba(245,158,11,0.10)",
+    border: "rgba(245,158,11,0.22)",
+    glow: "rgba(245,158,11,0.25)",
+  },
+  system: {
+    Icon: CheckCircle2,
+    color: "#10B981",
+    bg: "rgba(16,185,129,0.10)",
+    border: "rgba(16,185,129,0.20)",
+    glow: "rgba(16,185,129,0.20)",
+  },
+};
+
 export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -65,28 +96,46 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
   };
 
   const handleNotificationClick = (notif) => {
-    // Mark as read
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
     );
     onClose();
-    if (notif.caseId) {
-      navigate(`/cases/${notif.caseId}/graph`);
-    }
+    if (notif.caseId) navigate(`/cases/${notif.caseId}/graph`);
   };
 
   return (
     <div
-      className="absolute right-0 mt-2 w-96 max-w-[92vw] bg-bg border border-border rounded-sm shadow-xl z-50 overflow-hidden text-text select-none animate-in fade-in duration-150"
-      style={{ top: "100%" }}
+      className="absolute right-0 mt-2 w-96 max-w-[92vw] z-50 overflow-hidden select-none animate-fade-in-up"
+      style={{
+        top: "100%",
+        background: "rgba(4,8,20,0.96)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(0,212,255,0.18)",
+        borderRadius: "8px",
+        boxShadow: "0 12px 48px rgba(0,0,0,0.70), 0 0 24px rgba(0,212,255,0.08)",
+      }}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-bgSubtle">
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{
+          borderBottom: "1px solid rgba(0,212,255,0.10)",
+          background: "rgba(0,212,255,0.04)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-accent" />
+          <Bell className="w-4 h-4" style={{ color: "#00D4FF" }} />
           <span className="text-[13px] font-semibold text-text">Operational Alerts</span>
           {unreadCount > 0 && (
-            <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-riskHigh text-white rounded-full">
+            <span
+              className="px-1.5 py-0 text-[10px] font-mono font-bold rounded-full"
+              style={{
+                background: "#FF3B5C",
+                color: "#fff",
+                boxShadow: "0 0 8px rgba(255,59,92,0.60)",
+              }}
+            >
               {unreadCount}
             </span>
           )}
@@ -94,7 +143,10 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="text-[11px] text-accent hover:text-accentHover hover:underline flex items-center gap-1"
+            className="flex items-center gap-1 text-[11px] font-mono transition-all"
+            style={{ color: "rgba(0,212,255,0.60)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#00D4FF")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,212,255,0.60)")}
           >
             <Check className="w-3 h-3" />
             <span>Mark all read</span>
@@ -102,54 +154,48 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
         )}
       </div>
 
-      {/* List */}
-      <div className="max-h-[360px] overflow-y-auto divide-y divide-border">
+      {/* Notifications list */}
+      <div className="max-h-[360px] overflow-y-auto">
         {notifications.map((notif) => {
-          let IconComponent = Bell;
-          let iconColor = "text-accent";
-          let bgPill = "bg-accentSoft";
-
-          if (notif.type === "urgent") {
-            IconComponent = AlertTriangle;
-            iconColor = "text-riskHigh";
-            bgPill = "bg-riskHighBg text-riskHigh";
-          } else if (notif.type === "correlation") {
-            IconComponent = Network;
-            iconColor = "text-accent";
-            bgPill = "bg-accentSoft text-accent";
-          } else if (notif.type === "threat") {
-            IconComponent = ShieldAlert;
-            iconColor = "text-riskMed";
-            bgPill = "bg-riskMedBg text-riskMed";
-          }
+          const cfg = TYPE_CONFIG[notif.type] || TYPE_CONFIG.system;
+          const { Icon } = cfg;
 
           return (
             <div
               key={notif.id}
               onClick={() => handleNotificationClick(notif)}
-              className={`p-3.5 hover:bg-bgSubtle cursor-pointer transition-colors flex items-start gap-3 ${
-                !notif.read ? "bg-accentSoft/30" : ""
-              }`}
+              className="p-3.5 cursor-pointer flex items-start gap-3 transition-all"
+              style={{
+                borderBottom: "1px solid rgba(0,212,255,0.06)",
+                background: !notif.read ? "rgba(0,212,255,0.03)" : "transparent",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,212,255,0.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = !notif.read ? "rgba(0,212,255,0.03)" : "transparent")}
             >
+              {/* Icon */}
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${bgPill}`}
+                className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{
+                  background: cfg.bg,
+                  border: `1px solid ${cfg.border}`,
+                  boxShadow: `0 0 8px ${cfg.glow}`,
+                }}
               >
-                <IconComponent className={`w-3.5 h-3.5 ${iconColor}`} />
+                <Icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <span className="text-[12.5px] font-semibold text-text truncate">
-                    {notif.title}
-                  </span>
+                  <span className="text-[12.5px] font-semibold text-text truncate">{notif.title}</span>
                   {!notif.read && (
-                    <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: "#00D4FF", boxShadow: "0 0 6px rgba(0,212,255,0.80)" }}
+                    />
                   )}
                 </div>
-                <p className="text-[11.5px] text-textDim leading-snug">
-                  {notif.desc}
-                </p>
-                <div className="flex items-center gap-2 mt-1.5 text-[10.5px] text-textFaint">
+                <p className="text-[11.5px] text-textDim leading-snug">{notif.desc}</p>
+                <div className="flex items-center gap-2 mt-1.5 text-[10.5px]" style={{ color: "rgba(100,116,139,0.70)" }}>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {notif.time}
@@ -157,7 +203,7 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
                   {notif.caseNumber && (
                     <>
                       <span>•</span>
-                      <span className="font-mono font-semibold text-accent flex items-center gap-0.5">
+                      <span className="font-mono font-semibold flex items-center gap-0.5" style={{ color: "#00D4FF" }}>
                         {notif.caseNumber}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </span>
@@ -171,9 +217,12 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
       </div>
 
       {/* Footer */}
-      <div className="p-2 border-t border-border bg-bgSubtle text-center">
-        <span className="text-[11px] text-textFaint">
-          Real-time updates from correlation & threat intel pipelines
+      <div
+        className="p-2.5 text-center"
+        style={{ borderTop: "1px solid rgba(0,212,255,0.08)", background: "rgba(0,0,0,0.20)" }}
+      >
+        <span className="text-[10.5px] font-mono" style={{ color: "rgba(0,212,255,0.30)" }}>
+          Real-time updates from correlation &amp; threat intel pipelines
         </span>
       </div>
     </div>

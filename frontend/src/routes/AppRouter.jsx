@@ -21,12 +21,12 @@ function ShellLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg text-text">
-      {/* Sleek Top Navigation Bar with Tabs */}
+    <div className="min-h-screen flex flex-col text-text" style={{ background: "var(--paper)" }}>
+      {/* Glassmorphic Top Navigation Bar with Tabs */}
       <Topbar onOpenNewInvestigation={() => setIsNewInvestigationOpen(true)} />
 
-      {/* Main Full-Width Content Container */}
-      <main className="flex-1 w-full overflow-y-auto px-6 py-6 md:px-8">
+      {/* Main Content Area */}
+      <main className="flex-1 w-full overflow-y-auto px-6 py-7 md:px-10">
         <Outlet context={{ openNewInvestigation: () => setIsNewInvestigationOpen(true) }} />
       </main>
 

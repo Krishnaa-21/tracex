@@ -1,45 +1,40 @@
 import React from "react";
 
+/**
+ * TraceX brand mark — uses the official logo asset.
+ * size: "sm" | "md" | "lg"
+ */
 export default function Logo({ size = "md", showSubtitle = true, className = "" }) {
-  const isSmall = size === "sm";
-  const isLarge = size === "lg";
-
-  const iconDim = isSmall ? "w-7 h-7" : isLarge ? "w-11 h-11" : "w-8 h-8";
-  const titleSize = isSmall ? "text-[14px]" : isLarge ? "text-[20px]" : "text-[16px]";
-  const subSize = isSmall ? "text-[9.5px]" : "text-[11px]";
+  const logoSize = size === "sm" ? "w-7 h-7" : size === "lg" ? "w-12 h-12" : "w-9 h-9";
+  const titleSize = size === "sm" ? "text-[14px]" : size === "lg" ? "text-[22px]" : "text-[17px]";
+  const subSize = size === "sm" ? "text-[9px]" : "text-[10.5px]";
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      {/* TraceX mark: a case tab with a trace/connection path — evokes a
-          folder tab index and a network trace at once. */}
-      <div className={`${iconDim} flex-shrink-0`}>
-        <svg viewBox="0 0 40 40" fill="none" className="w-full h-full">
-          <rect x="1.5" y="6.5" width="37" height="30" rx="2.5" fill="#083344" />
-          <path d="M1.5 12.5H13L15.5 8.5H1.5V12.5Z" fill="#083344" />
-          <rect x="4.5" y="9.5" width="31" height="24" rx="1.5" fill="#020617" />
-          <path
-            d="M9 27L14.5 20L18.5 24L25.5 15L31 21"
-            stroke="#22D3EE"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-          <circle cx="9" cy="27" r="1.8" fill="#22D3EE" />
-          <circle cx="18.5" cy="24" r="1.8" fill="#22D3EE" />
-          <circle cx="25.5" cy="15" r="1.8" fill="#22D3EE" />
-          <circle cx="31" cy="21" r="1.8" fill="#F87171" />
-        </svg>
-      </div>
+      {/* Official TraceX logo image */}
+      <img
+        src="/logo.png"
+        alt="TraceX Logo"
+        className={`${logoSize} object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.50)]`}
+        draggable={false}
+      />
 
-      {/* Brand Text */}
+      {/* Brand text */}
       <div className="flex flex-col leading-none">
-        <span className={`${titleSize} font-display font-semibold text-text tracking-tight`}>
+        <span
+          className={`${titleSize} font-display font-bold tracking-tight`}
+          style={{
+            background: "linear-gradient(90deg, #00D4FF 0%, #8B5CF6 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
           TraceX
         </span>
         {showSubtitle && (
-          <span className={`${subSize} text-textDim leading-tight tracking-normal mt-0.5`}>
-            Cyber Fraud Case Room
+          <span className={`${subSize} text-textDim leading-tight tracking-widest uppercase font-mono mt-0.5`}>
+            Cyber Intelligence
           </span>
         )}
       </div>

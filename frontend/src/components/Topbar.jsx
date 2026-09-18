@@ -11,6 +11,7 @@ import {
   FileText,
   Layers,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { getOfficer, clearAuth, apiClient } from "../api/client";
 import Logo from "./Logo";
@@ -44,8 +45,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
 
   const activeCaseId = caseId || "1";
 
-  // Fetch the case list once (lazily, on first focus/keystroke) and reuse it for every
-  // subsequent keystroke instead of re-fetching from the network on each one.
+  // Fetch the case list once (lazily) and reuse for every subsequent keystroke
   const ensureCasesCache = async () => {
     if (allCasesCache) return allCasesCache;
     try {
@@ -58,8 +58,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
     }
   };
 
-  // Handle Search Input — filters the cached case list locally, no network
-  // round-trip per keystroke.
+  // Handle Search Input — filters cached case list locally
   useEffect(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) {
@@ -82,27 +81,20 @@ export default function Topbar({ onOpenNewInvestigation }) {
       setShowSearchResults(true);
     });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [searchQuery]);
 
-  // Click outside listener for dropdowns
+  // Click outside listener
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowSearchResults(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Invalidate the cached case list when a new case is created elsewhere in the
-  // app, so search reflects it without needing a full page reload.
+  // Invalidate cache when new case is created
   useEffect(() => {
     const handleCaseCreated = () => setAllCasesCache(null);
     window.addEventListener("tracex_case_created", handleCaseCreated);
@@ -135,184 +127,343 @@ export default function Topbar({ onOpenNewInvestigation }) {
     },
   ];
 
+  const initials = officer.name ? officer.name.charAt(0).toUpperCase() : "O";
+
   return (
-    <header className="bg-bgSubtle border-b border-border px-6 z-30 sticky top-0">
-      <div className="h-16 flex items-center justify-between">
-        {/* Left: Branding */}
-        <NavLink to="/" className="hover:opacity-90 transition-opacity">
+    <header
+      className="sticky top-0 z-30 px-6"
+      style={{
+        background: "rgba(5,7,13,0.85)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(0,212,255,0.12)",
+        boxShadow: "0 4px 30px rgba(0,0,0,0.50), 0 1px 0 rgba(0,212,255,0.06) inset",
+      }}
+    >
+      <div className="h-14 flex items-center justify-between gap-4">
+        {/* Left: Branding + live indicator */}
+        <NavLink to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity flex-shrink-0">
           <Logo size="sm" showSubtitle={true} />
+          {/* LIVE status dot */}
+          <div className="hidden sm:flex items-center gap-1.5 ml-1">
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+              style={{
+                boxShadow: "0 0 6px rgba(16,185,129,0.9)",
+                animation: "pulse-glow 2s ease-in-out infinite",
+              }}
+            />
+            <span className="text-[9px] font-mono tracking-widest uppercase" style={{ color: "rgba(16,185,129,0.70)" }}>
+              LIVE
+            </span>
+          </div>
         </NavLink>
 
-        {/* Right Controls: Search, New Investigation, Notifications, Profile */}
-        <div className="flex items-center gap-3">
-        {/* Global Live Search Box */}
-        <div className="relative" ref={searchRef}>
-          <Search className="w-3.5 h-3.5 text-textFaint absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => {
-              if (searchResults.length > 0) setShowSearchResults(true);
-            }}
-            placeholder="Search cases, victims, districts..."
-            className="w-56 pl-8 pr-3 py-1.5 text-[12px] bg-bg border border-border rounded-sm text-text placeholder-textFaint focus:outline-none focus:border-accent focus:w-64 transition-all"
-          />
+        {/* Right Controls */}
+        <div className="flex items-center gap-2">
+          {/* Global Live Search */}
+          <div className="relative" ref={searchRef}>
+            <Search
+              className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "rgba(0,212,255,0.45)" }}
+            />
+            <input
+              id="topbar-search"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={(e) => {
+                e.target.style.border = "1px solid rgba(0,212,255,0.50)";
+                e.target.style.boxShadow = "0 0 12px rgba(0,212,255,0.15)";
+                e.target.style.width = "220px";
+                if (searchResults.length > 0) setShowSearchResults(true);
+              }}
+              placeholder="Search cases, victims..."
+              className="w-48 pl-8 pr-3 py-1.5 text-[12px] font-mono rounded transition-all"
+              style={{
+                background: "rgba(0,0,0,0.40)",
+                border: "1px solid rgba(0,212,255,0.15)",
+                color: "#E2E8F0",
+                outline: "none",
+              }}
+              onBlur={(e) => {
+                e.target.style.border = "1px solid rgba(0,212,255,0.15)";
+                e.target.style.boxShadow = "none";
+                e.target.style.width = "";
+              }}
+            />
 
-          {/* Search Dropdown Results */}
-          {showSearchResults && (
-            <div className="absolute right-0 mt-1.5 w-72 bg-bg border border-border rounded-sm shadow-xl py-1 z-50 text-[12px]">
-              <div className="px-3 py-1.5 text-[10.5px] uppercase tracking-wider font-semibold text-textFaint border-b border-border">
-                Matching Cases ({searchResults.length})
-              </div>
-              {searchResults.length === 0 ? (
-                <div className="p-3 text-center text-textDim text-[12px]">
-                  No matching cases found
+            {/* Search results dropdown */}
+            {showSearchResults && (
+              <div
+                className="absolute right-0 mt-1.5 w-76 py-1 z-50 text-[12px] animate-fade-in-up"
+                style={{
+                  background: "rgba(5,10,22,0.95)",
+                  backdropFilter: "blur(16px)",
+                  border: "1px solid rgba(0,212,255,0.20)",
+                  borderRadius: "6px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.60), 0 0 20px rgba(0,212,255,0.08)",
+                  width: "280px",
+                }}
+              >
+                <div
+                  className="px-3 py-1.5 text-[10px] uppercase tracking-widest font-mono font-semibold"
+                  style={{ color: "rgba(0,212,255,0.50)", borderBottom: "1px solid rgba(0,212,255,0.10)" }}
+                >
+                  Matching Cases ({searchResults.length})
                 </div>
-              ) : (
-                searchResults.map((c) => (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      setShowSearchResults(false);
-                      setSearchQuery("");
-                      navigate(`/cases/${c.id}/graph`);
-                    }}
-                    className="px-3 py-2 hover:bg-bgSubtle cursor-pointer flex items-center justify-between transition-colors"
-                  >
-                    <div>
-                      <div className="font-mono font-bold text-accent">{c.case_number}</div>
-                      <div className="text-text font-medium">{c.victim_name}</div>
-                      <div className="text-[10.5px] text-textFaint">{c.district || "Pending district"}</div>
+                {searchResults.length === 0 ? (
+                  <div className="p-3 text-center text-textDim text-[12px]">No matching cases found</div>
+                ) : (
+                  searchResults.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setShowSearchResults(false);
+                        setSearchQuery("");
+                        navigate(`/cases/${c.id}/graph`);
+                      }}
+                      className="px-3 py-2 cursor-pointer flex items-center justify-between transition-colors"
+                      style={{ borderBottom: "1px solid rgba(0,212,255,0.06)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <div>
+                        <div className="font-mono font-bold text-[12px]" style={{ color: "#00D4FF" }}>{c.case_number}</div>
+                        <div className="text-text font-medium text-[12px]">{c.victim_name}</div>
+                        <div className="text-[10px]" style={{ color: "rgba(148,163,184,0.60)" }}>{c.district || "Pending district"}</div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-textFaint" />
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-textFaint" />
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Topbar "+ New investigation" CTA Button */}
-        <button
-          onClick={onOpenNewInvestigation}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accentHover text-white rounded-sm text-[12px] font-medium transition-colors cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>New investigation</span>
-        </button>
-
-        {/* Notifications Icon Button */}
-        <div className="relative">
-          <button
-            ref={notifButtonRef}
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
-            title="Operational Alerts"
-            className="w-8 h-8 rounded-sm flex items-center justify-center text-textDim hover:text-text hover:bg-bg border border-border transition-colors relative"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 bg-riskHigh rounded-full absolute top-1 right-1 border-2 border-bgSubtle"></span>
-          </button>
-
-          <NotificationsPopover
-            isOpen={notificationsOpen}
-            onClose={() => setNotificationsOpen(false)}
-            anchorRef={notifButtonRef}
-          />
-        </div>
-
-        {/* Officer Profile Avatar & Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-sm hover:bg-bg transition-colors focus:outline-none"
-          >
-            <div className="w-7 h-7 rounded-sm bg-accent text-white flex items-center justify-center text-[11px] font-bold font-display">
-              {officer.name ? officer.name.charAt(0).toUpperCase() : "O"}
-            </div>
-            <div className="hidden md:flex flex-col text-left">
-              <span className="text-[12px] font-semibold text-text leading-tight">
-                {officer.name || "Officer"}
-              </span>
-              <span className="text-[10px] text-textFaint font-mono leading-none">
-                {officer.badge_id || "IO"}
-              </span>
-            </div>
-          </button>
-
-          {/* Profile Dropdown Menu */}
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-1.5 w-56 bg-bg border border-border rounded-sm shadow-xl py-1.5 z-50 text-[12.5px] select-none">
-              <div className="px-3.5 py-2.5 border-b border-border mb-1 bg-bgSubtle">
-                <p className="font-semibold text-text">{officer.name}</p>
-                <p className="text-[11px] text-accent font-mono font-medium">{officer.badge_id}</p>
-                <p className="text-[10.5px] text-textFaint mt-0.5">{officer.station_name}</p>
+                  ))
+                )}
               </div>
+            )}
+          </div>
 
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  setProfileModalOpen(true);
+          {/* New Investigation CTA */}
+          <button
+            id="topbar-new-investigation"
+            onClick={onOpenNewInvestigation}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded transition-all cursor-pointer flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #007FA8 0%, #005280 100%)",
+              border: "1px solid rgba(0,212,255,0.40)",
+              color: "#fff",
+              boxShadow: "0 0 14px rgba(0,212,255,0.15)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 24px rgba(0,212,255,0.35)")}
+            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 14px rgba(0,212,255,0.15)")}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">New investigation</span>
+          </button>
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              ref={notifButtonRef}
+              id="topbar-notifications"
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              title="Operational Alerts"
+              className="w-8 h-8 rounded flex items-center justify-center transition-all relative cursor-pointer"
+              style={{
+                background: "rgba(0,0,0,0.30)",
+                border: "1px solid rgba(0,212,255,0.15)",
+                color: "rgba(148,163,184,0.80)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.border = "1px solid rgba(0,212,255,0.40)";
+                e.currentTarget.style.color = "#00D4FF";
+                e.currentTarget.style.boxShadow = "0 0 10px rgba(0,212,255,0.20)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.border = "1px solid rgba(0,212,255,0.15)";
+                e.currentTarget.style.color = "rgba(148,163,184,0.80)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <Bell className="w-4 h-4" />
+              {/* Alert pulse dot */}
+              <span
+                className="absolute top-1 right-1 w-2 h-2 rounded-full"
+                style={{
+                  background: "#FF3B5C",
+                  boxShadow: "0 0 6px rgba(255,59,92,0.80)",
+                  animation: "pulse-red 1.5s ease-in-out infinite",
                 }}
-                className="w-full px-3.5 py-2 text-left text-textDim hover:text-text hover:bg-bgSubtle flex items-center gap-2.5 transition-colors cursor-pointer"
-              >
-                <User className="w-3.5 h-3.5 text-accent" />
-                <span>My profile & credentials</span>
-              </button>
+              />
+            </button>
 
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  alert("Preferences: Sound alerts enabled • High-contrast map tiles enabled • Section 65B verification stamp active");
+            <NotificationsPopover
+              isOpen={notificationsOpen}
+              onClose={() => setNotificationsOpen(false)}
+              anchorRef={notifButtonRef}
+            />
+          </div>
+
+          {/* Officer profile */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              id="topbar-profile"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded transition-all cursor-pointer"
+              style={{ background: dropdownOpen ? "rgba(0,212,255,0.06)" : "transparent" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
+              onMouseLeave={(e) => {
+                if (!dropdownOpen) e.currentTarget.style.background = "transparent";
+              }}
+            >
+              {/* Avatar with gradient ring */}
+              <div
+                className="w-7 h-7 rounded flex items-center justify-center text-[11px] font-bold font-display"
+                style={{
+                  background: "linear-gradient(135deg, #0099CC, #6B21D8)",
+                  color: "#fff",
+                  boxShadow: "0 0 10px rgba(0,212,255,0.30)",
                 }}
-                className="w-full px-3.5 py-2 text-left text-textDim hover:text-text hover:bg-bgSubtle flex items-center gap-2.5 transition-colors cursor-pointer"
               >
-                <Settings className="w-3.5 h-3.5 text-textDim" />
-                <span>Preferences</span>
-              </button>
+                {initials}
+              </div>
+              <div className="hidden md:flex flex-col text-left">
+                <span className="text-[12px] font-semibold text-text leading-tight">{officer.name || "Officer"}</span>
+                <span className="text-[10px] font-mono leading-none" style={{ color: "rgba(0,212,255,0.60)" }}>
+                  {officer.badge_id || "IO"}
+                </span>
+              </div>
+              <ChevronDown
+                className="w-3 h-3 hidden md:block transition-transform"
+                style={{
+                  color: "rgba(0,212,255,0.40)",
+                  transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
 
-              <div className="border-t border-border my-1"></div>
-
-              <button
-                onClick={handleSignOut}
-                className="w-full px-3.5 py-2 text-left text-riskHigh hover:bg-riskHighBg flex items-center gap-2.5 transition-colors cursor-pointer"
+            {/* Profile Dropdown */}
+            {dropdownOpen && (
+              <div
+                className="absolute right-0 mt-1.5 w-56 py-1.5 z-50 text-[12.5px] select-none animate-fade-in-up"
+                style={{
+                  background: "rgba(5,10,22,0.96)",
+                  backdropFilter: "blur(20px)",
+                  border: "1px solid rgba(0,212,255,0.18)",
+                  borderRadius: "6px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.70), 0 0 20px rgba(0,212,255,0.08)",
+                }}
               >
-                <LogOut className="w-3.5 h-3.5 text-riskHigh" />
-                <span>Sign out</span>
-              </button>
-            </div>
-          )}
-        </div>
+                <div
+                  className="px-3.5 py-2.5 mb-1"
+                  style={{ borderBottom: "1px solid rgba(0,212,255,0.10)", background: "rgba(0,212,255,0.04)" }}
+                >
+                  <p className="font-semibold text-text">{officer.name}</p>
+                  <p className="text-[11px] font-mono font-medium mt-0.5" style={{ color: "#00D4FF" }}>{officer.badge_id}</p>
+                  <p className="text-[10.5px] mt-0.5 text-textDim">{officer.station_name}</p>
+                </div>
+
+                {[
+                  {
+                    icon: User,
+                    label: "My profile & credentials",
+                    onClick: () => { setDropdownOpen(false); setProfileModalOpen(true); },
+                    color: "rgba(0,212,255,0.70)",
+                  },
+                  {
+                    icon: Settings,
+                    label: "Preferences",
+                    onClick: () => { setDropdownOpen(false); alert("Preferences: Sound alerts enabled • High-contrast map tiles enabled • Section 65B verification stamp active"); },
+                    color: "rgba(148,163,184,0.60)",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    className="w-full px-3.5 py-2 text-left flex items-center gap-2.5 transition-colors cursor-pointer text-textDim"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(0,212,255,0.06)";
+                      e.currentTarget.style.color = "#E2E8F0";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "";
+                    }}
+                  >
+                    <item.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: item.color }} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+
+                <div style={{ borderTop: "1px solid rgba(0,212,255,0.08)", margin: "4px 0" }} />
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2.5 transition-colors cursor-pointer"
+                  style={{ color: "#FF8BA0" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,59,92,0.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <LogOut className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#FF3B5C" }} />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Folder-tab navigation strip — replaces the sidebar */}
-      <nav className="flex items-end gap-1 -mb-px">
+      {/* Navigation tab strip */}
+      <nav className="flex items-end gap-0.5 -mb-px">
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <NavLink
               key={tab.label}
               to={tab.to}
-              className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium border-t border-x rounded-t-sm transition-all ${
-                tab.isActive
-                  ? "bg-bg text-text font-semibold border-border border-b-bg -mb-px"
-                  : "bg-transparent text-textDim hover:text-text border-transparent"
-              }`}
+              className={`relative flex items-center gap-2 px-4 py-2.5 text-[12.5px] font-medium transition-all rounded-t`}
+              style={{
+                color: tab.isActive ? "#00D4FF" : "rgba(148,163,184,0.65)",
+                background: tab.isActive ? "rgba(0,212,255,0.06)" : "transparent",
+                borderTop: tab.isActive ? "1px solid rgba(0,212,255,0.20)" : "1px solid transparent",
+                borderLeft: tab.isActive ? "1px solid rgba(0,212,255,0.20)" : "1px solid transparent",
+                borderRight: tab.isActive ? "1px solid rgba(0,212,255,0.20)" : "1px solid transparent",
+                borderBottom: tab.isActive ? "1px solid rgba(5,7,13,0.85)" : "1px solid transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (!tab.isActive) {
+                  e.currentTarget.style.color = "rgba(0,212,255,0.80)";
+                  e.currentTarget.style.background = "rgba(0,212,255,0.04)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!tab.isActive) {
+                  e.currentTarget.style.color = "rgba(148,163,184,0.65)";
+                  e.currentTarget.style.background = "transparent";
+                }
+              }}
             >
-              <Icon className={`w-3.5 h-3.5 ${tab.isActive ? "text-signal" : "text-textFaint"}`} />
+              <Icon
+                className="w-3.5 h-3.5"
+                style={{ color: tab.isActive ? "#00D4FF" : "rgba(148,163,184,0.50)" }}
+              />
               <span>{tab.label}</span>
+
+              {/* Active tab bottom glow line */}
+              {tab.isActive && (
+                <div
+                  className="absolute bottom-0 left-3 right-3 h-px"
+                  style={{
+                    background: "#00D4FF",
+                    boxShadow: "0 0 8px rgba(0,212,255,0.80)",
+                  }}
+                />
+              )}
             </NavLink>
           );
         })}
       </nav>
 
-
       {/* Officer Profile Modal */}
-      <ProfileModal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-      />
+      <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </header>
   );
 }

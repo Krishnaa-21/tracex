@@ -83,17 +83,40 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-7 pb-16">
-      {/* 1. Header — case-room log line, not a generic welcome card */}
-      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-5">
+      {/* 1. Header — operations room status line */}
+      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5" style={{ borderBottom: "1px solid rgba(0,212,255,0.10)" }}>
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-textFaint font-medium mb-1">
-            {todayStr}
+          {/* Date + system status */}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="text-[10.5px] font-mono uppercase tracking-widest" style={{ color: "rgba(0,212,255,0.45)" }}>
+              {todayStr}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ background: "#10B981", boxShadow: "0 0 6px rgba(16,185,129,0.90)", animation: "pulse-glow 2s ease-in-out infinite" }}
+              />
+              <span className="text-[9.5px] font-mono tracking-widest uppercase" style={{ color: "rgba(16,185,129,0.70)" }}>SYSTEM ONLINE</span>
+            </div>
           </div>
-          <h1 className="text-[26px] font-display font-semibold text-text tracking-tight leading-none">
+
+          <h1
+            className="text-[28px] font-display font-bold tracking-tight leading-none"
+            style={{
+              background: "linear-gradient(135deg, #00D4FF 0%, #8B5CF6 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
             {officer.station_name || "Bhopal Cyber Operations Room"}
           </h1>
-          <p className="text-[13px] text-textDim mt-1.5">
-            Logged in as <span className="font-medium text-text">{officer.name || "Investigator"}</span>
+          <p className="text-[13px] text-textDim mt-2">
+            Logged in as{" "}
+            <span className="font-semibold text-text">{officer.name || "Investigator"}</span>
+            <span className="font-mono text-[11px] ml-2 px-1.5 py-0.5 rounded" style={{ color: "rgba(0,212,255,0.60)", background: "rgba(0,212,255,0.07)", border: "1px solid rgba(0,212,255,0.15)" }}>
+              {officer.badge_id || "IO"}
+            </span>
           </p>
         </div>
 
@@ -101,13 +124,24 @@ export default function Home() {
           <button
             onClick={fetchDashboardData}
             title="Refresh operational telemetry"
-            className="p-2 text-textDim hover:text-text hover:bg-bgSubtle border border-border rounded-sm transition-colors cursor-pointer"
+            className="p-2 rounded transition-all cursor-pointer"
+            style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.18)", color: "rgba(0,212,255,0.60)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 12px rgba(0,212,255,0.20)"; e.currentTarget.style.color = "#00D4FF"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.color = "rgba(0,212,255,0.60)"; }}
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-accent" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} style={{ color: isLoading ? "#00D4FF" : undefined }} />
           </button>
           <button
             onClick={openNewInvestigation}
-            className="flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accentHover text-white rounded-sm text-[13px] font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold rounded transition-all cursor-pointer"
+            style={{
+              background: "linear-gradient(135deg, #007FA8 0%, #004F80 100%)",
+              border: "1px solid rgba(0,212,255,0.40)",
+              color: "#fff",
+              boxShadow: "0 0 16px rgba(0,212,255,0.18)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 28px rgba(0,212,255,0.40)")}
+            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 16px rgba(0,212,255,0.18)")}
           >
             <Plus className="w-4 h-4" />
             <span>New investigation</span>
@@ -134,17 +168,20 @@ export default function Home() {
 
       {/* 5. Ingested Evidence Processing Tray */}
       <section className="space-y-3 pt-2">
-        <div className="border-b border-border pb-2.5 flex items-center justify-between">
+        <div className="pb-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(0,212,255,0.08)" }}>
           <div className="flex items-center gap-2">
-            <h2 className="text-[12px] uppercase font-semibold text-text tracking-wider">
-              Evidence Ingestion & Indexing Pipeline
+            <h2 className="text-[11px] font-mono uppercase font-semibold tracking-widest" style={{ color: "rgba(0,212,255,0.60)" }}>
+              Evidence Ingestion &amp; Indexing Pipeline
             </h2>
-            <span className="text-[11px] font-mono text-textFaint bg-bgSubtle px-2 py-0.5 rounded border border-border">
+            <span
+              className="text-[10.5px] font-mono px-2 py-0.5 rounded"
+              style={{ color: "rgba(0,212,255,0.50)", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.14)" }}
+            >
               {unprocessedEvidence.length} in queue
             </span>
           </div>
-          <span className="text-[11px] text-textFaint">
-            Automatic hashing, parsing & multi-hop extraction
+          <span className="text-[11px] font-mono" style={{ color: "rgba(0,212,255,0.30)" }}>
+            Automatic hashing, parsing &amp; multi-hop extraction
           </span>
         </div>
         <EvidenceTray files={unprocessedEvidence} isLoading={isLoading} />
@@ -152,13 +189,11 @@ export default function Home() {
 
       {/* 6. Jurisdictional Fraud Density Heatmap */}
       <section className="space-y-3 pt-2">
-        <div className="border-b border-border pb-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[12px] uppercase font-semibold text-text tracking-wider">
-              Jurisdictional Fraud Density Heatmap
-            </h2>
-          </div>
-          <span className="text-[11px] text-textFaint">
+        <div className="pb-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(0,212,255,0.08)" }}>
+          <h2 className="text-[11px] font-mono uppercase font-semibold tracking-widest" style={{ color: "rgba(0,212,255,0.60)" }}>
+            Jurisdictional Fraud Density Heatmap
+          </h2>
+          <span className="text-[11px] font-mono" style={{ color: "rgba(0,212,255,0.30)" }}>
             Click any district to filter priority incidents
           </span>
         </div>
