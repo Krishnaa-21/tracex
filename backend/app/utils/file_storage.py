@@ -15,9 +15,11 @@ def get_case_upload_dir(case_id: Union[int, str]) -> Path:
 
 
 def save_upload_file(case_id: Union[int, str], filename: str, file_obj: Union[BinaryIO, bytes]) -> Path:
-    """Save an uploaded file to backend/uploads/{case_id}/{filename}."""
+    """Save an uploaded file to backend/uploads/{case_id}/{filename} securely."""
     case_dir = get_case_upload_dir(case_id)
-    destination = case_dir / filename
+    # Sanitize filename to prevent directory traversal attacks (e.g. ../../evil.exe)
+    safe_name = Path(filename).name.strip() or "uploaded_evidence"
+    destination = case_dir / safe_name
 
     if isinstance(file_obj, bytes):
         with open(destination, "wb") as f:

@@ -1,6 +1,6 @@
 import enum
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -18,6 +18,11 @@ from app.db.database import Base
 
 def generate_case_number() -> str:
     return f"#{random.randint(1000, 9999)}"
+
+
+def utc_now() -> datetime:
+    """Return naive UTC timestamp to replace deprecated datetime.utcnow()."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class ScamType(str, enum.Enum):
@@ -71,7 +76,7 @@ class Officer(Base):
     name = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
     station_name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     cases = relationship("Case", back_populates="officer")
 
@@ -87,7 +92,7 @@ class Case(Base):
     risk_level = Column(Enum(RiskLevel), nullable=True)
     risk_score = Column(Float, nullable=True)
     registered_by = Column(Integer, ForeignKey("officers.id"), nullable=False)
-    registered_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    registered_at = Column(DateTime, default=utc_now, nullable=False)
     district = Column(String, nullable=True)
     why_flagged = Column(String, nullable=True)
 
@@ -109,7 +114,7 @@ class EvidenceFile(Base):
     sha256_hash = Column(String, nullable=False)
     row_count = Column(Integer, nullable=True)
     upload_status = Column(Enum(UploadStatus), default=UploadStatus.queued, nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    uploaded_at = Column(DateTime, default=utc_now, nullable=False)
 
     case = relationship("Case", back_populates="evidence_files")
 
@@ -154,6 +159,6 @@ class CaseSummary(Base):
     id = Column(Integer, primary_key=True, index=True)
     case_id = Column(Integer, ForeignKey("cases.id"), nullable=False)
     narrative_text = Column(Text, nullable=False)
-    generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime, default=utc_now, nullable=False)
 
     case = relationship("Case", back_populates="summaries")

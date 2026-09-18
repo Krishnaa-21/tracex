@@ -43,3 +43,5 @@ class CaseSummaryStats(BaseModel):
     active_cases: int
     awaiting_correlation: int
     closed_this_month: int
+    # Alias / backward compatibility field for high_risk_cases
+    critical_cases: Optional[int] = None

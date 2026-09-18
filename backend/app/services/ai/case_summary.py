@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import httpx
 from sqlalchemy.orm import Session
@@ -197,7 +197,7 @@ def generate_case_summary(case_id: int, db: Session) -> CaseSummary:
     summary_record = CaseSummary(
         case_id=case_id,
         narrative_text=narrative_text,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.add(summary_record)
     db.commit()

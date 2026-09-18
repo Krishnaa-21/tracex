@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -71,7 +71,7 @@ def get_summary_stats(
     db: Session = Depends(get_db),
     current_officer: Officer = Depends(get_current_officer),
 ):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     start_of_month = datetime(now.year, now.month, 1)
 
     # High-risk cases: risk_level == "high" (the model has no separate "critical" tier)
@@ -119,6 +119,7 @@ def get_summary_stats(
 
     return CaseSummaryStats(
         high_risk_cases=high_risk_count,
+        critical_cases=high_risk_count,
         active_cases=active_count,
         awaiting_correlation=awaiting_count,
         closed_this_month=closed_month_count,

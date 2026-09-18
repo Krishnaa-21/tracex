@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -292,7 +292,7 @@ def _render_pdf_with_reportlab_takedown(
         ],
         [
             Paragraph(f"<b>Target Victim:</b> {case.victim_name}", body_style),
-            Paragraph(f"<b>Issuance Timestamp:</b> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC", body_style),
+            Paragraph(f"<b>Issuance Timestamp:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC", body_style),
         ],
     ]
     jur_table = Table(jur_data, colWidths=[270, 270])

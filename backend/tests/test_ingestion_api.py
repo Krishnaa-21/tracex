@@ -88,6 +88,7 @@ def test_case_lifecycle_and_evidence_ingestion():
         stats_res = client.get("/api/cases/summary-stats", headers=headers)
         assert stats_res.status_code == 200
         stats = stats_res.json()
+        assert "high_risk_cases" in stats
         assert "critical_cases" in stats
         assert "active_cases" in stats
         assert "awaiting_correlation" in stats
