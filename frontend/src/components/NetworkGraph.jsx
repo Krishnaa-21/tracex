@@ -171,6 +171,13 @@ const CLUSTER_CONFIGS = [
   },
 ];
 
+// SVG Canvas layout dimensions for compact & screen-efficient display
+const SVG_WIDTH = 1000;
+const SVG_HEIGHT = 540;
+const CENTER_X = 500;
+const CENTER_Y = 270;
+const CLUSTER_RADIUS = 185;
+
 export default function NetworkGraph({
   nodes = [],
   edges = [],
@@ -198,6 +205,13 @@ export default function NetworkGraph({
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const touchDistRef = useRef(null);
+  const dragRef = useRef({
+    isPointerDown: false,
+    targetClusterId: null,
+    startX: 0,
+    startY: 0,
+    hasMoved: false,
+  });
 
   // Compute cluster aggregations dynamically from real backend nodes and edges
   const clustersData = useMemo(() => {
@@ -243,12 +257,11 @@ export default function NetworkGraph({
         topEntities = config.defaultEntities;
       }
 
-      // Calculate radial coordinates around center (cx = 500, cy = 340, R = 245)
+      // Calculate radial coordinates around center (cx = 500, cy = 270, R = 185)
       // 7 positions evenly distributed starting at top (-90 degrees)
       const angle = -Math.PI / 2 + index * ((2 * Math.PI) / 7);
-      const radius = 245;
-      const defaultX = 500 + radius * Math.cos(angle);
-      const defaultY = 340 + radius * Math.sin(angle);
+      const defaultX = Math.round(CENTER_X + CLUSTER_RADIUS * Math.cos(angle));
+      const defaultY = Math.round(CENTER_Y + CLUSTER_RADIUS * Math.sin(angle));
       const userPos = clusterPositions[config.id];
       const x = userPos ? userPos.x : defaultX;
       const y = userPos ? userPos.y : defaultY;
@@ -308,14 +321,17 @@ export default function NetworkGraph({
     setActiveHop("overview");
   };
 
-  // Attach native non-passive wheel listener to container for smooth zooming
+  // Attach wheel listener: page scrolls naturally unless Ctrl/Cmd is held for zoom
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.09 : 0.09;
-      setZoom((z) => Math.min(2.5, Math.max(0.5, Number((z + delta).toFixed(2)))));
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.08 : 0.08;
+        setZoom((z) => Math.min(2.5, Math.max(0.5, Number((z + delta).toFixed(2)))));
+      }
+      // Without modifier key, browser performs normal page scrolling
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -342,17 +358,25 @@ export default function NetworkGraph({
     setIsSidePanelOpen(true);
   };
 
-  // Cluster node drag start (pins the node and prevents physics drift)
+  // Cluster node pointer down - distinguishes pure click from intentional drag
   const handleClusterMouseDown = (clusterId, e) => {
     e.stopPropagation();
-    setSelectedClusterId(clusterId);
-    setIsSidePanelOpen(true);
-    setDraggedCluster(clusterId);
+    dragRef.current = {
+      isPointerDown: true,
+      targetClusterId: clusterId,
+      startX: e.clientX,
+      startY: e.clientY,
+      hasMoved: false,
+    };
   };
 
   // Mouse pan & drag handlers for SVG canvas
   const handleMouseDown = (e) => {
-    if (e.target.closest(".interactive-node") || e.target.closest(".floating-panel")) {
+    if (
+      e.target.closest(".interactive-node") ||
+      e.target.closest(".floating-panel") ||
+      e.target.closest(".controls-cluster")
+    ) {
       return;
     }
     setIsDragging(true);
@@ -360,28 +384,58 @@ export default function NetworkGraph({
   };
 
   const handleMouseMove = (e) => {
-    if (draggedCluster && svgRef.current) {
-      const rect = svgRef.current.getBoundingClientRect();
-      const svgX = ((e.clientX - rect.left) / rect.width) * 1000;
-      const svgY = ((e.clientY - rect.top) / rect.height) * 680;
-      const worldX = (svgX - (500 + pan.x)) / zoom + 500;
-      const worldY = (svgY - (340 + pan.y)) / zoom + 340;
-      setClusterPositions((prev) => ({
-        ...prev,
-        [draggedCluster]: {
-          x: Math.max(70, Math.min(930, Math.round(worldX))),
-          y: Math.max(70, Math.min(610, Math.round(worldY))),
-        },
-      }));
-      return;
+    // Cluster dragging with threshold to prevent click wobble
+    if (dragRef.current.isPointerDown && dragRef.current.targetClusterId) {
+      const dx = Math.abs(e.clientX - dragRef.current.startX);
+      const dy = Math.abs(e.clientY - dragRef.current.startY);
+
+      // Require > 7px intentional movement before initiating drag
+      if (!dragRef.current.hasMoved && (dx > 7 || dy > 7)) {
+        // Active selected node is strictly frozen/pinned
+        if (dragRef.current.targetClusterId !== selectedClusterId) {
+          dragRef.current.hasMoved = true;
+          setDraggedCluster(dragRef.current.targetClusterId);
+        }
+      }
+
+      if (dragRef.current.hasMoved && svgRef.current) {
+        const rect = svgRef.current.getBoundingClientRect();
+        const svgX = ((e.clientX - rect.left) / rect.width) * SVG_WIDTH;
+        const svgY = ((e.clientY - rect.top) / rect.height) * SVG_HEIGHT;
+        const worldX = (svgX - (CENTER_X + pan.x)) / zoom + CENTER_X;
+        const worldY = (svgY - (CENTER_Y + pan.y)) / zoom + CENTER_Y;
+        setClusterPositions((prev) => ({
+          ...prev,
+          [dragRef.current.targetClusterId]: {
+            x: Math.max(50, Math.min(SVG_WIDTH - 50, Math.round(worldX))),
+            y: Math.max(50, Math.min(SVG_HEIGHT - 50, Math.round(worldY))),
+          },
+        }));
+        return;
+      }
     }
+
     if (!isDragging) return;
     setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
 
   const handleMouseUp = () => {
+    if (dragRef.current.isPointerDown) {
+      // If pointer moved less than 7px threshold, it is a pure click -> select & freeze node
+      if (!dragRef.current.hasMoved && dragRef.current.targetClusterId) {
+        setSelectedClusterId(dragRef.current.targetClusterId);
+        setIsSidePanelOpen(true);
+      }
+      dragRef.current = {
+        isPointerDown: false,
+        targetClusterId: null,
+        startX: 0,
+        startY: 0,
+        hasMoved: false,
+      };
+      setDraggedCluster(null);
+    }
     setIsDragging(false);
-    setDraggedCluster(null);
   };
 
   // Touch handlers for mobile pinch-to-zoom and panning
@@ -457,19 +511,18 @@ export default function NetworkGraph({
       }`}
     >
       {/* 1. Header Title & Hop / View Controls Row */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-2.5">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <span>Case Correlation Graph</span>
           </h2>
-          <p className="text-[12.5px] text-slate-400 mt-0.5">
-            Explore connections between entities. Click on a cluster to expand, or search for a specific entity.
+          <p className="text-[12px] text-slate-400 mt-0.5">
+            Explore connections between entities. Click a category cluster to view details or hold Ctrl + scroll to zoom.
           </p>
         </div>
 
-        {/* Right-aligned Hop / View Controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Hop Tabs */}
+        {/* Right-aligned Hop Tabs */}
+        <div className="flex items-center gap-2">
           <div className="bg-[#0B1222] border border-slate-800 rounded-lg p-1 flex items-center gap-1 shadow-sm">
             {[
               { id: "overview", label: "Overview" },
@@ -480,7 +533,7 @@ export default function NetworkGraph({
               <button
                 key={tab.id}
                 onClick={() => setActiveHop(tab.id)}
-                className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all cursor-pointer ${
                   activeHop === tab.id
                     ? "bg-blue-600 text-white shadow-md font-semibold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
@@ -490,111 +543,88 @@ export default function NetworkGraph({
               </button>
             ))}
           </div>
-
-          {/* Reset View Button */}
-          <button
-            onClick={handleResetView}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-300 bg-[#0B1222] border border-slate-800 hover:bg-slate-800/70 rounded-lg transition-colors cursor-pointer shadow-sm"
-            title="Reset zoom and center view"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset View</span>
-          </button>
-
-          {/* Fullscreen Expand Button */}
-          <button
-            onClick={toggleFullscreen}
-            className="p-1.5 text-slate-400 hover:text-white bg-[#0B1222] border border-slate-800 hover:bg-slate-800/70 rounded-lg transition-colors cursor-pointer shadow-sm"
-            title={isFullscreen ? "Exit Fullscreen" : "Expand Fullscreen"}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" />
-            ) : (
-              <Maximize2 className="w-4 h-4" />
-            )}
-          </button>
         </div>
       </div>
 
-      {/* 2. Five Summary Stat Cards (Directly above the graph) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* 2. Five Summary Stat Cards (Directly above the graph - Compact & Screen-Efficient) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* Total Entities */}
-        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-slate-700/80 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <Users className="w-5 h-5 text-blue-400" />
+        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-3 shadow-sm hover:border-slate-700/80 transition-colors">
+          <div className="w-8.5 h-8.5 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <Users className="w-4 h-4 text-blue-400" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               Total Entities
             </div>
-            <div className="text-xl font-bold font-mono text-white mt-0.5">
+            <div className="text-base sm:text-lg font-bold font-mono text-white mt-0.5">
               {summaryStats.totalEntities.toLocaleString()}
             </div>
           </div>
         </div>
 
         {/* Total Connections */}
-        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-slate-700/80 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0">
-            <Link2 className="w-5 h-5 text-cyan-400" />
+        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-3 shadow-sm hover:border-slate-700/80 transition-colors">
+          <div className="w-8.5 h-8.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0">
+            <Link2 className="w-4 h-4 text-cyan-400" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               Total Connections
             </div>
-            <div className="text-xl font-bold font-mono text-white mt-0.5">
+            <div className="text-base sm:text-lg font-bold font-mono text-white mt-0.5">
               {summaryStats.totalConnections.toLocaleString()}
             </div>
           </div>
         </div>
 
         {/* High Risk Entities */}
-        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-rose-900/40 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-rose-500" />
+        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-3 shadow-sm hover:border-rose-900/40 transition-colors">
+          <div className="w-8.5 h-8.5 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               High Risk Entities
             </div>
-            <div className="text-xl font-bold font-mono text-rose-400 mt-0.5">
+            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 mt-0.5">
               {summaryStats.highRiskEntities.toLocaleString()}
             </div>
           </div>
         </div>
 
         {/* Entity Types */}
-        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-slate-700/80 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
-            <Database className="w-5 h-5 text-indigo-400" />
+        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-3 shadow-sm hover:border-slate-700/80 transition-colors">
+          <div className="w-8.5 h-8.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+            <Database className="w-4 h-4 text-indigo-400" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               Entity Types
             </div>
-            <div className="text-xl font-bold font-mono text-white mt-0.5">
+            <div className="text-base sm:text-lg font-bold font-mono text-white mt-0.5">
               {summaryStats.entityTypes}
             </div>
           </div>
         </div>
 
         {/* Cross-case Links */}
-        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-slate-700/80 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <Share2 className="w-5 h-5 text-emerald-400" />
+        <div className="bg-[#0B1222] border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-3 shadow-sm hover:border-slate-700/80 transition-colors">
+          <div className="w-8.5 h-8.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+            <Share2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               Cross-case Links
             </div>
-            <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
+            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-0.5">
               {summaryStats.crossCaseLinks}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Main Graph Canvas Area */}
+      {/* 3. Main Graph Canvas Area - Compact & Screen-Efficient */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
@@ -603,7 +633,11 @@ export default function NetworkGraph({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative w-full h-[660px] rounded-2xl border border-slate-800 bg-[#070B14] overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-2xl"
+        className={`relative w-full ${
+          isFullscreen
+            ? "h-[calc(100vh-140px)]"
+            : "h-[450px] sm:h-[480px] lg:h-[500px]"
+        } rounded-2xl border border-slate-800 bg-[#070B14] overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-2xl`}
       >
         {/* Subtle radial aura & grid lines */}
         <div
@@ -614,17 +648,63 @@ export default function NetworkGraph({
           }}
         />
 
+        {/* Top-Left Floating Controls: Zoom In, Level %, Zoom Out, Reset/Fit View, Fullscreen */}
+        <div className="controls-cluster absolute top-3 left-3 z-20 flex flex-col items-center bg-[#080E1C]/92 backdrop-blur-md border border-slate-800/90 rounded-xl overflow-hidden shadow-2xl divide-y divide-slate-800/80 pointer-events-auto">
+          <button
+            onClick={handleZoomIn}
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title="Zoom In (or Ctrl + Scroll)"
+            aria-label="Zoom In"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <div
+            className="py-0.5 px-1.5 text-[9px] font-mono text-center text-slate-400 font-semibold select-none bg-[#050914]"
+            title="Current Zoom Level (Ctrl + Scroll to zoom)"
+          >
+            {Math.round(zoom * 100)}%
+          </div>
+          <button
+            onClick={handleZoomOut}
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title="Zoom Out (or Ctrl + Scroll)"
+            aria-label="Zoom Out"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleResetView}
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title="Reset View / Fit to Center"
+            aria-label="Reset View"
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+            aria-label="Toggle Fullscreen"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+
         {/* SVG Graph Surface */}
         <svg
           ref={svgRef}
-          viewBox="0 0 1000 680"
+          viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           className="w-full h-full"
           style={{ touchAction: "none" }}
         >
           <defs>
             {/* Soft glow filter for nodes */}
             <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -633,7 +713,7 @@ export default function NetworkGraph({
 
             {/* High intensity pulse filter for active nodes */}
             <filter id="center-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur2" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur2" />
               <feMerge>
                 <feMergeNode in="blur2" />
                 <feMergeNode in="SourceGraphic" />
@@ -641,17 +721,17 @@ export default function NetworkGraph({
             </filter>
 
             {/* Subtle background grid pattern */}
-            <pattern id="grid-dots" width="36" height="36" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.2" fill="#1e293b" opacity="0.45" />
+            <pattern id="grid-dots" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.1" fill="#1e293b" opacity="0.45" />
             </pattern>
           </defs>
 
           {/* Background grid */}
-          <rect width="1000" height="680" fill="url(#grid-dots)" />
+          <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="url(#grid-dots)" />
 
           {/* Transform group for Pan & Zoom */}
           <g
-            transform={`translate(${500 + pan.x} ${340 + pan.y}) scale(${zoom}) translate(-500 -340)`}
+            transform={`translate(${CENTER_X + pan.x} ${CENTER_Y + pan.y}) scale(${zoom}) translate(-${CENTER_X} -${CENTER_Y})`}
           >
             {/* Multi-Hop Cross-Edges (Visible when 1 Hop / 2 Hops / 3 Hops is active) */}
             {crossHops.map((hop, i) => {
@@ -678,11 +758,11 @@ export default function NetworkGraph({
             {clustersData.map((cluster) => {
               const isSelected = selectedClusterId === cluster.id;
               const isHovered = hoveredClusterId === cluster.id;
-              const cx = 500;
-              const cy = 340;
-              // Position link badge at 42% distance to keep clean clearance from cluster circle
-              const midX = cx + (cluster.x - cx) * 0.42;
-              const midY = cy + (cluster.y - cy) * 0.42;
+              const cx = CENTER_X;
+              const cy = CENTER_Y;
+              // Position link badge at 44% distance for clear clearance
+              const midX = cx + (cluster.x - cx) * 0.44;
+              const midY = cy + (cluster.y - cy) * 0.44;
 
               return (
                 <g key={`edge-${cluster.id}`}>
@@ -693,7 +773,7 @@ export default function NetworkGraph({
                     x2={cluster.x}
                     y2={cluster.y}
                     stroke={cluster.color}
-                    strokeWidth={isSelected ? "3" : "1.8"}
+                    strokeWidth={isSelected ? "2.6" : "1.6"}
                     strokeOpacity={isSelected ? "0.9" : "0.55"}
                   />
 
@@ -704,11 +784,11 @@ export default function NetworkGraph({
                     opacity={zoom < 0.65 && !isSelected && !isHovered ? 0.3 : 1}
                   >
                     <rect
-                      x="-38"
-                      y="-11"
-                      width="76"
-                      height="22"
-                      rx="11"
+                      x="-34"
+                      y="-10"
+                      width="68"
+                      height="20"
+                      rx="10"
                       fill="#060B17"
                       stroke={cluster.color}
                       strokeWidth="1.2"
@@ -717,7 +797,7 @@ export default function NetworkGraph({
                       y="3.5"
                       textAnchor="middle"
                       fill="#E2E8F0"
-                      fontSize="9.5"
+                      fontSize="9"
                       fontFamily="monospace"
                       fontWeight="600"
                     >
@@ -740,7 +820,7 @@ export default function NetworkGraph({
                   {cluster.topEntities.slice(0, 6).map((ent, entIdx) => {
                     const count = Math.min(cluster.topEntities.length, 6);
                     // Alternating staggered radius to avoid label overlap
-                    const childRadius = entIdx % 2 === 0 ? 100 : 128;
+                    const childRadius = entIdx % 2 === 0 ? 80 : 105;
                     const fanAngle =
                       cluster.angle - Math.PI / 2.3 + (entIdx * (Math.PI / 1.15)) / Math.max(count - 1, 1);
                     const entX = cluster.x + childRadius * Math.cos(fanAngle);
@@ -779,19 +859,19 @@ export default function NetworkGraph({
                         <circle
                           cx={entX}
                           cy={entY}
-                          r="14"
+                          r="12"
                           fill="#090E1A"
                           stroke={entRiskColor}
-                          strokeWidth="2"
+                          strokeWidth="1.8"
                         />
-                        <circle cx={entX} cy={entY} r="4" fill={entRiskColor} />
+                        <circle cx={entX} cy={entY} r="3.5" fill={entRiskColor} />
                         {/* Text label with anti-overlap truncation & zoom sensitivity */}
                         <text
                           x={entX}
-                          y={entY + 24}
+                          y={entY + 20}
                           textAnchor="middle"
                           fill="#E2E8F0"
-                          fontSize="8.5"
+                          fontSize="8"
                           fontFamily="monospace"
                           className="pointer-events-none transition-opacity duration-200"
                           opacity={zoom < 0.75 && !isHovered ? 0 : 1}
@@ -808,10 +888,10 @@ export default function NetworkGraph({
             })}
 
             {/* Central Case Node ("Case TRX-2024-001") */}
-            <g transform="translate(500, 340)" className="interactive-node">
+            <g transform={`translate(${CENTER_X}, ${CENTER_Y})`} className="interactive-node">
               {/* Outer soft aura */}
               <circle
-                r="82"
+                r="66"
                 fill="none"
                 stroke="#0EA5E9"
                 strokeWidth="1.5"
@@ -820,60 +900,60 @@ export default function NetworkGraph({
                 className="animate-spin-slow"
               />
               <circle
-                r="72"
+                r="56"
                 fill="#071226"
                 stroke="#38BDF8"
-                strokeWidth="2.5"
+                strokeWidth="2.2"
                 filter="url(#center-glow)"
               />
 
               {/* Icon */}
-              <g transform="translate(-12, -45)">
-                <Folder className="w-6 h-6 text-sky-400" />
+              <g transform="translate(-10, -36)">
+                <Folder className="w-5 h-5 text-sky-400" />
               </g>
 
               {/* Case text */}
               <text
-                y="-12"
+                y="-10"
                 textAnchor="middle"
                 fill="#64748B"
-                fontSize="9"
+                fontSize="8"
                 fontWeight="700"
                 letterSpacing="1.5"
               >
                 CASE
               </text>
               <text
-                y="5"
+                y="4"
                 textAnchor="middle"
                 fill="#F8FAFC"
-                fontSize="13"
+                fontSize="11.5"
                 fontWeight="800"
                 fontFamily="monospace"
               >
                 {caseNumber.startsWith("#") ? `Case ${caseNumber}` : caseNumber}
               </text>
               <text
-                y="22"
+                y="18"
                 textAnchor="middle"
                 fill="#94A3B8"
-                fontSize="9.5"
+                fontSize="8.5"
                 fontWeight="500"
               >
                 {summaryStats.totalEntities.toLocaleString()} entities
               </text>
               <text
-                y="36"
+                y="29"
                 textAnchor="middle"
                 fill="#64748B"
-                fontSize="9"
+                fontSize="8"
                 fontWeight="500"
               >
                 {summaryStats.totalConnections.toLocaleString()} links
               </text>
             </g>
 
-            {/* 7 Category Cluster Nodes */}
+            {/* 7 Category Cluster Nodes - Fully Stable & Immovable on Click */}
             {clustersData.map((cluster) => {
               const isSelected = selectedClusterId === cluster.id;
               const isExpanded = expandedClusters.has(cluster.id);
@@ -884,11 +964,12 @@ export default function NetworkGraph({
                 <g
                   key={cluster.id}
                   transform={`translate(${cluster.x}, ${cluster.y})`}
-                  className="interactive-node cursor-grab active:cursor-grabbing transition-transform duration-150 hover:scale-105"
+                  className="interactive-node cursor-pointer select-none"
                   onMouseDown={(e) => handleClusterMouseDown(cluster.id, e)}
                   onMouseEnter={() => setHoveredClusterId(cluster.id)}
                   onMouseLeave={() => setHoveredClusterId(null)}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedClusterId(cluster.id);
                     setIsSidePanelOpen(true);
                   }}
@@ -897,49 +978,49 @@ export default function NetworkGraph({
                   {/* Outer active pulse ring if selected */}
                   {isSelected && (
                     <circle
-                      r="46"
+                      r="39"
                       fill="none"
                       stroke={cluster.color}
-                      strokeWidth="2"
-                      strokeOpacity="0.5"
+                      strokeWidth="1.8"
+                      strokeOpacity="0.6"
                       strokeDasharray="4 3"
                     />
                   )}
 
                   {/* Main circular node container */}
                   <circle
-                    r="37"
+                    r="31"
                     fill="#080F1E"
                     stroke={cluster.color}
-                    strokeWidth={isSelected ? "3" : "2.2"}
+                    strokeWidth={isSelected ? "2.6" : isHovered ? "2.2" : "1.8"}
                     filter="url(#neon-glow)"
                   />
 
                   {/* Center category icon */}
-                  <g transform="translate(-10, -10)">
+                  <g transform="translate(-8, -8)">
                     <IconComponent
                       style={{ color: cluster.color }}
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                     />
                   </g>
 
                   {/* Small top-right circular toggle badge (+ or ×) */}
                   <g
-                    transform="translate(24, -24)"
+                    transform="translate(20, -20)"
                     onClick={(e) => toggleExpandCluster(cluster.id, e)}
                     className="hover:scale-110 transition-transform cursor-pointer"
                   >
                     <circle
-                      r="9"
+                      r="7.5"
                       fill="#0B132B"
                       stroke={cluster.color}
                       strokeWidth="1.2"
                     />
                     <text
-                      y="3"
+                      y="2.5"
                       textAnchor="middle"
                       fill="#E2E8F0"
-                      fontSize="10"
+                      fontSize="9"
                       fontWeight="bold"
                     >
                       {isExpanded ? "×" : "+"}
@@ -949,10 +1030,10 @@ export default function NetworkGraph({
                   {/* Below-node text details with dynamic anti-overlap density */}
                   {/* Category Name */}
                   <text
-                    y="52"
+                    y="44"
                     textAnchor="middle"
                     fill="#F8FAFC"
-                    fontSize="11.5"
+                    fontSize="10.5"
                     fontWeight="700"
                     className="pointer-events-none"
                   >
@@ -961,10 +1042,10 @@ export default function NetworkGraph({
 
                   {/* Entity Count (Dynamic visibility at low zoom) */}
                   <text
-                    y="66"
+                    y="56"
                     textAnchor="middle"
                     fill="#94A3B8"
-                    fontSize="9.5"
+                    fontSize="8.5"
                     fontWeight="500"
                     className="pointer-events-none transition-opacity duration-200"
                     opacity={zoom < 0.75 && !isSelected && !isHovered ? 0 : 1}
@@ -974,25 +1055,25 @@ export default function NetworkGraph({
 
                   {/* High Risk Pill Badge (Dynamic visibility at low zoom) */}
                   <g
-                    transform="translate(0, 74)"
+                    transform="translate(0, 63)"
                     className="transition-opacity duration-200"
                     opacity={zoom < 0.75 && !isSelected && !isHovered ? 0 : 1}
                   >
                     <rect
-                      x="-38"
+                      x="-33"
                       y="0"
-                      width="76"
-                      height="16"
-                      rx="8"
+                      width="66"
+                      height="15"
+                      rx="7.5"
                       fill="#3B0814"
                       stroke="#F43F5E"
                       strokeWidth="0.8"
                     />
                     <text
-                      y="11.5"
+                      y="10.5"
                       textAnchor="middle"
                       fill="#FB7185"
-                      fontSize="8.5"
+                      fontSize="8"
                       fontWeight="700"
                     >
                       {cluster.highRisk} high risk
@@ -1006,10 +1087,10 @@ export default function NetworkGraph({
 
         {/* 4. Detail Floating Side Panel (Attached to the right inside the canvas) */}
         {isSidePanelOpen && selectedCluster && (
-          <div className="floating-panel absolute right-4 top-4 bottom-4 w-80 md:w-88 rounded-2xl bg-[#080E1C]/92 backdrop-blur-xl border border-slate-800 p-4 shadow-2xl z-20 flex flex-col justify-between">
+          <div className="floating-panel absolute right-3 top-3 bottom-3 w-76 sm:w-80 rounded-2xl bg-[#080E1C]/95 backdrop-blur-xl border border-slate-800 p-3.5 shadow-2xl z-30 flex flex-col justify-between overflow-hidden">
             {/* Panel Top Header */}
             <div>
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                 <div className="flex items-center gap-2">
                   <div
                     className="p-1.5 rounded-lg"
@@ -1041,40 +1122,40 @@ export default function NetworkGraph({
               </div>
 
               {/* Quick Stats: 3 Metric Tiles */}
-              <div className="grid grid-cols-3 gap-2 my-3">
-                <div className="bg-[#0B1327] border border-rose-900/30 rounded-xl p-2.5 text-center">
-                  <div className="text-base font-bold font-mono text-rose-400">
+              <div className="grid grid-cols-3 gap-2 my-2.5">
+                <div className="bg-[#0B1327] border border-rose-900/30 rounded-xl p-2 text-center">
+                  <div className="text-sm sm:text-base font-bold font-mono text-rose-400">
                     {selectedCluster.highRisk}
                   </div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
+                  <div className="text-[9.5px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
                     High Risk
                   </div>
                 </div>
 
-                <div className="bg-[#0B1327] border border-slate-800 rounded-xl p-2.5 text-center">
-                  <div className="text-base font-bold font-mono text-white">
+                <div className="bg-[#0B1327] border border-slate-800 rounded-xl p-2 text-center">
+                  <div className="text-sm sm:text-base font-bold font-mono text-white">
                     {selectedCluster.count}
                   </div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
+                  <div className="text-[9.5px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
                     Total
                   </div>
                 </div>
 
-                <div className="bg-[#0B1327] border border-slate-800 rounded-xl p-2.5 text-center">
-                  <div className="text-base font-bold font-mono text-cyan-400">
+                <div className="bg-[#0B1327] border border-slate-800 rounded-xl p-2 text-center">
+                  <div className="text-sm sm:text-base font-bold font-mono text-cyan-400">
                     {selectedCluster.linksCount}
                   </div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
-                    Connections
+                  <div className="text-[9.5px] text-slate-400 uppercase tracking-wider font-semibold mt-0.5">
+                    Links
                   </div>
                 </div>
               </div>
 
               {/* Navigation Tabs: Top Entities vs Risk Distribution */}
-              <div className="grid grid-cols-2 gap-1 bg-[#060A14] border border-slate-800/80 rounded-lg p-1 mb-3">
+              <div className="grid grid-cols-2 gap-1 bg-[#060A14] border border-slate-800/80 rounded-lg p-1 mb-2.5">
                 <button
                   onClick={() => setActiveSideTab("top")}
-                  className={`py-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                  className={`py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                     activeSideTab === "top"
                       ? "bg-blue-600/90 text-white shadow"
                       : "text-slate-400 hover:text-white"
@@ -1084,7 +1165,7 @@ export default function NetworkGraph({
                 </button>
                 <button
                   onClick={() => setActiveSideTab("distribution")}
-                  className={`py-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                  className={`py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                     activeSideTab === "distribution"
                       ? "bg-blue-600/90 text-white shadow"
                       : "text-slate-400 hover:text-white"
@@ -1096,8 +1177,8 @@ export default function NetworkGraph({
 
               {/* Tab 1: Top Entities Ranked List */}
               {activeSideTab === "top" ? (
-                <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
-                  <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500 px-2 pb-1 border-b border-slate-800/50">
+                <div className="space-y-1.5 max-h-[200px] sm:max-h-[230px] overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between text-[9.5px] uppercase font-bold text-slate-500 px-2 pb-1 border-b border-slate-800/50">
                     <span>Entity</span>
                     <span>Connections</span>
                   </div>
@@ -1105,7 +1186,7 @@ export default function NetworkGraph({
                   {selectedCluster.topEntities.map((item, idx) => (
                     <div
                       key={item.id || idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-[#0A1020] border border-slate-800/60 hover:border-slate-700 transition-colors text-xs"
+                      className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg bg-[#0A1020] border border-slate-800/60 hover:border-slate-700 transition-colors text-xs"
                     >
                       <div className="flex items-center gap-2 min-w-0 pr-2">
                         <div
@@ -1119,11 +1200,11 @@ export default function NetworkGraph({
                                 : "#3B82F6",
                           }}
                         />
-                        <span className="font-mono text-slate-200 truncate font-semibold">
+                        <span className="font-mono text-slate-200 truncate font-semibold text-[11.5px]">
                           {item.value}
                         </span>
                         <span
-                          className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${
+                          className={`text-[8.5px] uppercase px-1 py-0.2 rounded font-bold ${
                             item.risk === "high"
                               ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                               : item.risk === "medium"
@@ -1134,7 +1215,7 @@ export default function NetworkGraph({
                           {item.risk}
                         </span>
                       </div>
-                      <span className="font-mono text-slate-300 font-bold">
+                      <span className="font-mono text-slate-300 font-bold text-xs">
                         {item.connections}
                       </span>
                     </div>
@@ -1142,8 +1223,8 @@ export default function NetworkGraph({
                 </div>
               ) : (
                 /* Tab 2: Risk Distribution */
-                <div className="space-y-4 py-2">
-                  <div className="space-y-1.5">
+                <div className="space-y-3 py-1">
+                  <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-rose-400 font-semibold flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -1157,7 +1238,7 @@ export default function NetworkGraph({
                         %)
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div
                         className="h-full bg-rose-500 rounded-full"
                         style={{
@@ -1172,7 +1253,7 @@ export default function NetworkGraph({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-amber-400 font-semibold flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -1188,7 +1269,7 @@ export default function NetworkGraph({
                         (36%)
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div
                         className="h-full bg-amber-500 rounded-full"
                         style={{ width: "36%" }}
@@ -1196,7 +1277,7 @@ export default function NetworkGraph({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-blue-400 font-semibold flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -1212,7 +1293,7 @@ export default function NetworkGraph({
                         (50%)
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full"
                         style={{ width: "50%" }}
@@ -1224,10 +1305,10 @@ export default function NetworkGraph({
             </div>
 
             {/* Panel Bottom Action */}
-            <div className="pt-3 border-t border-slate-800/80 mt-2">
+            <div className="pt-2 border-t border-slate-800/80 mt-2">
               <button
                 onClick={() => toggleExpandCluster(selectedCluster.id)}
-                className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/20"
+                className="w-full py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/20"
               >
                 <span>
                   {expandedClusters.has(selectedCluster.id)
@@ -1241,98 +1322,69 @@ export default function NetworkGraph({
         )}
 
         {/* 5. Bottom-Left Overlay: Risk Level Legend */}
-        <div className="absolute bottom-4 left-4 rounded-xl bg-[#080E1C]/88 backdrop-blur-md border border-slate-800/90 p-3 shadow-xl pointer-events-auto">
-          <div className="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-2">
+        <div className="absolute bottom-3 left-3 rounded-xl bg-[#080E1C]/88 backdrop-blur-md border border-slate-800/90 p-2.5 shadow-xl pointer-events-auto">
+          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">
             Risk Level
           </div>
-          <div className="space-y-1.5 text-xs">
+          <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-              <span className="text-slate-300 font-medium">High</span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+              <span className="text-slate-300 text-[11px] font-medium">High</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-              <span className="text-slate-300 font-medium">Medium</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+              <span className="text-slate-300 text-[11px] font-medium">Medium</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-              <span className="text-slate-300 font-medium">Low</span>
+              <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <span className="text-slate-300 text-[11px] font-medium">Low</span>
             </div>
           </div>
         </div>
 
-        {/* 6. Bottom-Right Overlay: Minimap & Zoom Controls */}
-        <div className="absolute bottom-4 right-4 flex items-end gap-2.5 pointer-events-auto z-10">
-          {/* Satellite Minimap Thumbnail */}
-          <div className="hidden sm:block w-24 h-20 rounded-xl bg-[#080E1C]/90 backdrop-blur border border-slate-800 p-1 shadow-xl">
-            <svg viewBox="0 0 1000 680" className="w-full h-full opacity-70">
-              <circle cx="500" cy="340" r="28" fill="#0EA5E9" />
+        {/* 6. Bottom-Right Overlay: Satellite Minimap (only when side panel is closed to avoid conflict) */}
+        {!isSidePanelOpen && (
+          <div className="hidden sm:block absolute bottom-3 right-3 w-22 h-16 rounded-xl bg-[#080E1C]/90 backdrop-blur border border-slate-800 p-1 shadow-xl pointer-events-auto z-10">
+            <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="w-full h-full opacity-70">
+              <circle cx={CENTER_X} cy={CENTER_Y} r="20" fill="#0EA5E9" />
               {clustersData.map((c) => (
                 <g key={`mini-${c.id}`}>
                   <line
-                    x1="500"
-                    y1="340"
+                    x1={CENTER_X}
+                    y1={CENTER_Y}
                     x2={c.x}
                     y2={c.y}
                     stroke={c.color}
-                    strokeWidth="8"
+                    strokeWidth="6"
                     opacity="0.5"
                   />
-                  <circle cx={c.x} cy={c.y} r="22" fill={c.color} />
+                  <circle cx={c.x} cy={c.y} r="16" fill={c.color} />
                 </g>
               ))}
               {/* Viewport indicator box */}
               <rect
-                x={400 - pan.x * 0.4}
-                y={260 - pan.y * 0.4}
-                width={220 / zoom}
-                height={160 / zoom}
+                x={400 - pan.x * 0.35}
+                y={200 - pan.y * 0.35}
+                width={200 / zoom}
+                height={140 / zoom}
                 fill="none"
                 stroke="#60A5FA"
-                strokeWidth="6"
-                strokeDasharray="10 5"
+                strokeWidth="5"
+                strokeDasharray="8 4"
               />
             </svg>
           </div>
-
-          {/* Zoom Buttons */}
-          <div className="flex flex-col rounded-xl bg-[#080E1C]/90 backdrop-blur border border-slate-800 overflow-hidden shadow-xl">
-            <button
-              onClick={handleZoomIn}
-              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors border-b border-slate-800/80 cursor-pointer"
-              title="Zoom In"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            <div className="py-1 px-1.5 text-[9.5px] font-mono text-center text-slate-400 font-semibold border-b border-slate-800/80 select-none bg-[#050914]">
-              {Math.round(zoom * 100)}%
-            </div>
-            <button
-              onClick={handleZoomOut}
-              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors border-b border-slate-800/80 cursor-pointer"
-              title="Zoom Out"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleResetView}
-              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
-              title="Fit to View / Reset Positions"
-            >
-              <Crosshair className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 7. Bottom Strip: Recent Findings */}
-      <div className="rounded-xl bg-[#080E1C] border border-slate-800/80 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300 shadow-sm">
-        <div className="font-bold text-slate-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5 flex-shrink-0">
+      {/* 7. Bottom Strip: Recent Findings - Compact */}
+      <div className="rounded-xl bg-[#080E1C] border border-slate-800/80 px-3.5 py-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-300 shadow-sm">
+        <div className="font-bold text-slate-400 uppercase tracking-wider text-[10.5px] flex items-center gap-1.5 flex-shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
           <span>Recent Findings</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11.5px]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0" />
             <span>+91 98765 43210 linked to 3 bank accounts</span>
