@@ -105,10 +105,11 @@ export default function NotificationsPopover({ isOpen, onClose, anchorRef }) {
 
   return (
     <div
-      className="absolute right-0 mt-2 w-96 max-w-[92vw] z-50 overflow-hidden select-none animate-fade-in-up"
+      className="fixed w-96 max-w-[92vw] z-[200] overflow-hidden select-none animate-fade-in-up"
       style={{
-        top: "100%",
-        background: "rgba(4,8,20,0.96)",
+        top: "56px",
+        right: "56px",
+        background: "rgba(4,8,20,0.98)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         border: "1px solid rgba(0,212,255,0.18)",

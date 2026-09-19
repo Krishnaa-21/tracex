@@ -138,6 +138,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
         WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(0,212,255,0.12)",
         boxShadow: "0 4px 30px rgba(0,0,0,0.50), 0 1px 0 rgba(0,212,255,0.06) inset",
+        overflow: "visible",
       }}
     >
       <div className="h-14 flex items-center justify-between gap-4">
@@ -340,16 +341,19 @@ export default function Topbar({ onOpenNewInvestigation }) {
               />
             </button>
 
-            {/* Profile Dropdown */}
+            {/* Profile Dropdown — fixed position to avoid clipping by header stacking context */}
             {dropdownOpen && (
               <div
-                className="absolute right-0 mt-1.5 w-56 py-1.5 z-50 text-[12.5px] select-none animate-fade-in-up"
+                className="fixed w-56 py-1.5 z-[200] text-[12.5px] select-none animate-fade-in-up"
                 style={{
-                  background: "rgba(5,10,22,0.96)",
+                  top: "56px",
+                  right: "16px",
+                  background: "rgba(5,10,22,0.98)",
                   backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(0,212,255,0.18)",
-                  borderRadius: "6px",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.70), 0 0 20px rgba(0,212,255,0.08)",
+                  WebkitBackdropFilter: "blur(20px)",
+                  border: "1px solid rgba(0,212,255,0.22)",
+                  borderRadius: "8px",
+                  boxShadow: "0 12px 48px rgba(0,0,0,0.80), 0 0 24px rgba(0,212,255,0.10)",
                 }}
               >
                 <div

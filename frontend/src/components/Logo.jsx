@@ -5,9 +5,9 @@ import React from "react";
  * size: "sm" | "md" | "lg"
  */
 export default function Logo({ size = "md", showSubtitle = true, className = "" }) {
-  const logoSize = size === "sm" ? "w-7 h-7" : size === "lg" ? "w-12 h-12" : "w-9 h-9";
-  const titleSize = size === "sm" ? "text-[14px]" : size === "lg" ? "text-[22px]" : "text-[17px]";
-  const subSize = size === "sm" ? "text-[9px]" : "text-[10.5px]";
+  const logoSize = size === "sm" ? "w-7 h-7" : size === "lg" ? "w-14 h-14" : "w-9 h-9";
+  const titleSize = size === "sm" ? "text-[14px]" : size === "lg" ? "text-[24px]" : "text-[17px]";
+  const subSize = size === "sm" ? "text-[9px]" : size === "lg" ? "text-[11px]" : "text-[10.5px]";
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
@@ -15,7 +15,8 @@ export default function Logo({ size = "md", showSubtitle = true, className = "" 
       <img
         src="/logo.png"
         alt="TraceX Logo"
-        className={`${logoSize} object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.50)]`}
+        className={`${logoSize} object-contain flex-shrink-0`}
+        style={{ filter: "drop-shadow(0 0 10px rgba(0,212,255,0.55))" }}
         draggable={false}
       />
 

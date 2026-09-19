@@ -130,23 +130,7 @@ export default function Login() {
         />
       </div>
 
-      {/* System status top bar */}
-      <div className="absolute top-4 left-0 right-0 flex justify-center">
-        <div
-          className="flex items-center gap-3 px-4 py-1.5 text-[11px] font-mono"
-          style={{
-            background: "rgba(0,212,255,0.06)",
-            border: "1px solid rgba(0,212,255,0.15)",
-            borderRadius: "4px",
-            color: "rgba(0,212,255,0.70)",
-          }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(16,185,129,0.8)" }} />
-          <span>SECURE CHANNEL ESTABLISHED</span>
-          <span className="opacity-50">|</span>
-          <span className="opacity-60">TLS 1.3 / AES-256-GCM</span>
-        </div>
-      </div>
+
 
       {/* Main login card */}
       <div
@@ -179,17 +163,9 @@ export default function Login() {
           <div className="absolute bottom-0 right-0 w-px h-full" style={{ background: "rgba(139,92,246,0.6)" }} />
         </div>
 
-        {/* Logo & heading */}
+        {/* Logo & heading — Logo already includes brand name, no duplicate needed */}
         <div className="flex flex-col items-center mb-6">
-          <Logo size="lg" showSubtitle={false} />
-          <div className="mt-3 text-center">
-            <h1 className="text-[20px] font-display font-bold text-gradient-cyber">
-              TraceX
-            </h1>
-            <p className="text-[11px] font-mono text-textDim tracking-widest uppercase mt-0.5">
-              Cyber Fraud Intelligence Platform
-            </p>
-          </div>
+          <Logo size="lg" showSubtitle={true} />
         </div>
 
         {/* Boot terminal mini display */}
