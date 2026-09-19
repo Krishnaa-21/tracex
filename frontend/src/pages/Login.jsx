@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, AlertCircle, ArrowRight, Loader2, Shield, Cpu, Activity } from "lucide-react";
+import { Lock, AlertCircle, ArrowRight, Loader2, Shield, Eye, HelpCircle, CheckCircle } from "lucide-react";
 import { apiClient, setToken, setOfficer } from "../api/client";
+import { useMode } from "../context/ModeContext";
 import Logo from "../components/Logo";
 
 /** Floating orb background element */
@@ -25,14 +26,18 @@ function CircuitLine({ style }) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { mode, setMode } = useMode ? useMode() : { mode: "analysis", setMode: () => {} };
+  const isStandardMode = mode === "standard";
+
   const [badgeId, setBadgeId] = useState("MP-IO-4471");
   const [password, setPassword] = useState("demo1234");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [bootText, setBootText] = useState("");
 
-  // Boot sequence text animation
+  // Boot sequence text animation for Analysis Mode
   useEffect(() => {
+    if (isStandardMode) return;
     const lines = [
       "TRACEX INTELLIGENCE CORE v2.4.1",
       "Initializing secure enclave...",
@@ -58,7 +63,7 @@ export default function Login() {
       }
     }, 28);
     return () => clearInterval(interval);
-  }, []);
+  }, [isStandardMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,11 +99,239 @@ export default function Login() {
     }
   };
 
+  /* ──────────────────────────────────────────────────────────────────────────
+     STANDARD MODE: Formal Government Portal / Law-Enforcement Aesthetic
+  ────────────────────────────────────────────────────────────────────────── */
+  if (isStandardMode) {
+    return (
+      <div className="min-h-screen bg-[#F1F5F9] flex flex-col justify-between text-[#0F172A] font-sans antialiased">
+        {/* Top Government Strip with Tricolor Accent */}
+        <header className="w-full bg-white border-b border-[#CBD5E1] shadow-xs">
+          {/* Indian Tricolor Bar */}
+          <div className="h-1 w-full flex">
+            <div className="h-full w-1/3 bg-[#FF9933]" />
+            <div className="h-full w-1/3 bg-white" />
+            <div className="h-full w-1/3 bg-[#128807]" />
+          </div>
+
+          {/* Ministry & Top Navigation Bar */}
+          <div className="bg-[#0B3B60] text-white px-4 sm:px-8 py-2 flex flex-wrap items-center justify-between gap-3 text-[12px]">
+            <div className="flex items-center gap-2">
+              <span className="font-bold">भारत सरकार | गृह मंत्रालय</span>
+              <span className="text-white/40">|</span>
+              <span className="text-white/90">Government of India — Ministry of Home Affairs</span>
+            </div>
+
+            {/* Mode Switcher Pill */}
+            <div className="flex items-center bg-[#07263F] p-0.5 rounded-full border border-white/20 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setMode("standard")}
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white text-[#0B3B60] shadow-xs cursor-pointer"
+              >
+                🏛️ Standard Mode
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("analysis")}
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-white/80 hover:text-white cursor-pointer"
+              >
+                ⚡ Analysis Mode
+              </button>
+            </div>
+          </div>
+
+          {/* Department Seal & Portal Identity */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-full border-2 border-[#0B3B60] bg-[#F8FAFC] flex items-center justify-center p-1 shadow-xs flex-shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-[#0B3B60]" fill="currentColor">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path d="M50 12 L58 30 L78 30 L62 42 L68 62 L50 50 L32 62 L38 42 L22 30 L42 30 Z" fill="#B45309" />
+                  <rect x="35" y="66" width="30" height="6" rx="2" fill="currentColor" />
+                  <rect x="25" y="74" width="50" height="5" rx="1.5" fill="#0B3B60" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-[#B45309] font-serif tracking-wider uppercase">
+                  National Cyber Crime Investigation &amp; Coordination Centre (I4C)
+                </div>
+                <div className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">
+                  TraceX Law Enforcement Operations Portal
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2 text-[11.5px] text-[#475569] font-mono">
+              <Shield className="w-4 h-4 text-[#0B3B60]" />
+              <span>Section 65B Certified Forensic Gateway</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Center Main Card Container */}
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md bg-white border border-[#CBD5E1] rounded-lg shadow-sm overflow-hidden">
+            {/* Card Header */}
+            <div className="bg-[#0B3B60] text-white px-6 py-4 flex items-center justify-between border-b border-[#082C48]">
+              <div>
+                <div className="text-[11px] font-mono text-yellow-400 font-bold uppercase tracking-wider">
+                  Secure Nodal Access
+                </div>
+                <h2 className="text-base font-bold text-white tracking-tight">
+                  Investigating Officer Authentication
+                </h2>
+              </div>
+              <Lock className="w-5 h-5 text-white/70" />
+            </div>
+
+            <div className="p-6 sm:p-7 space-y-5">
+              {/* Statutory Notice */}
+              <div className="bg-[#F8FAFC] border-l-4 border-[#0B3B60] p-3 text-[11.5px] text-[#334155] rounded-r leading-relaxed">
+                <p className="font-semibold text-[#0B3B60] mb-0.5">RESTRICTED GOVERNMENT REPOSITORY</p>
+                <p>
+                  Unauthorized access or data exfiltration is strictly prohibited and punishable under Sections 43 &amp; 66 of the Information Technology Act 2000. All terminal sessions are cryptographically signed and logged.
+                </p>
+              </div>
+
+              {/* Error banner */}
+              {error && (
+                <div className="p-3 text-[12px] bg-red-50 border border-red-200 text-red-700 rounded flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
+                  <span className="leading-snug">{error}</span>
+                </div>
+              )}
+
+              {/* Login form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="login-badge-id"
+                    className="block text-[11.5px] font-bold text-[#334155] mb-1.5 uppercase tracking-wide"
+                  >
+                    Officer Identifier / Badge ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="login-badge-id"
+                    type="text"
+                    required
+                    value={badgeId}
+                    onChange={(e) => setBadgeId(e.target.value)}
+                    placeholder="e.g. MP-IO-4471"
+                    className="w-full px-3 py-2 text-[13px] bg-white border border-[#CBD5E1] rounded text-[#0F172A] placeholder-[#94A3B8] focus:border-[#0B3B60] focus:ring-1 focus:ring-[#0B3B60] outline-none transition-all font-mono"
+                  />
+                  <span className="text-[10px] text-[#64748B] mt-1 block">
+                    Assigned nodal officer credential (e.g. MP-IO-4471 for Bhopal Cyber Cell)
+                  </span>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="login-password"
+                    className="block text-[11.5px] font-bold text-[#334155] mb-1.5 uppercase tracking-wide"
+                  >
+                    Access Security Key <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter security key"
+                    className="w-full px-3 py-2 text-[13px] bg-white border border-[#CBD5E1] rounded text-[#0F172A] placeholder-[#94A3B8] focus:border-[#0B3B60] focus:ring-1 focus:ring-[#0B3B60] outline-none transition-all"
+                  />
+                </div>
+
+                {/* Submit button */}
+                <button
+                  id="login-submit"
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-2 py-2.5 px-4 bg-[#0B3B60] hover:bg-[#07263F] text-white text-[13px] font-bold rounded flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Authenticating Credentials...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Verify &amp; Enter Portal</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Support & Admin Links */}
+              <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[11.5px] text-[#0B3B60]">
+                <button
+                  type="button"
+                  onClick={() => alert("Please contact your State Police IT Admin / Nodal Desk for password reset.")}
+                  className="hover:underline cursor-pointer"
+                >
+                  Forgot Credentials?
+                </button>
+                <span className="text-[#CBD5E1]">•</span>
+                <button
+                  type="button"
+                  onClick={() => alert("Emergency Helpline: 1930 | Operational Desk: nodal@cybercrime.gov.in")}
+                  className="hover:underline cursor-pointer"
+                >
+                  Contact Nodal Officer
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Card Ribbon */}
+            <div className="bg-[#F8FAFC] border-t border-[#CBD5E1] px-6 py-2.5 flex items-center justify-between text-[10.5px] text-[#64748B]">
+              <span>Encryption: TLS 1.3 / AES-256</span>
+              <span className="font-mono text-[#0B3B60] font-bold">STATE-DESK-4471</span>
+            </div>
+          </div>
+        </main>
+
+        {/* Minimal Government Footer */}
+        <footer className="w-full bg-white border-t border-[#CBD5E1] py-3.5 px-4 sm:px-8 text-center text-[11px] text-[#64748B]">
+          <p>
+            © 2026 National Cybercrime Coordination Centre (I4C) | Ministry of Home Affairs, Government of India.
+          </p>
+          <p className="text-[10px] text-[#94A3B8] mt-0.5">
+            Compliant with Bharatiya Nyaya Sanhita (BNS) 2023 &amp; IT (Intermediary Guidelines) Rules.
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     ANALYSIS MODE: Original Cyberpunk / Dark SOC Aesthetic (Preserved 100%)
+  ────────────────────────────────────────────────────────────────────────── */
   return (
     <div
       className="min-h-screen flex flex-col justify-center items-center px-4 py-8 overflow-hidden relative"
       style={{ background: "linear-gradient(135deg, #03050C 0%, #070B17 50%, #05070F 100%)" }}
     >
+      {/* Top right Mode Switcher */}
+      <div className="absolute top-4 right-4 z-50 flex items-center bg-[#07263F]/80 p-0.5 rounded-full border border-cyan-500/30 shadow-lg backdrop-blur-md">
+        <button
+          type="button"
+          onClick={() => setMode("standard")}
+          className="px-3 py-1 rounded-full text-[11px] font-medium text-slate-300 hover:text-white transition-all cursor-pointer"
+        >
+          🏛️ Standard Mode
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("analysis")}
+          className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#00D4FF] text-[#05070D] shadow-sm cursor-pointer"
+        >
+          ⚡ Analysis Mode
+        </button>
+      </div>
+
       {/* Animated background glow orbs */}
       <GlowOrb className="w-[500px] h-[500px] bg-cyan-500 top-[-120px] left-[-80px]" />
       <GlowOrb className="w-[400px] h-[400px] bg-violet-600 bottom-[-100px] right-[-80px]" />
@@ -129,8 +362,6 @@ export default function Login() {
           }}
         />
       </div>
-
-
 
       {/* Main login card */}
       <div
@@ -299,7 +530,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => alert("Please contact your departmental IT administrator to reset credentials.")}
-            className="transition-colors hover:underline"
+            className="transition-colors hover:underline cursor-pointer"
             style={{ color: "rgba(0,212,255,0.50)" }}
             onMouseEnter={(e) => (e.target.style.color = "rgba(0,212,255,0.90)")}
             onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.50)")}
@@ -310,7 +541,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => alert("For operations room support, contact State Cyber Cell Desk (Ext 401).")}
-            className="transition-colors hover:underline"
+            className="transition-colors hover:underline cursor-pointer"
             style={{ color: "rgba(0,212,255,0.50)" }}
             onMouseEnter={(e) => (e.target.style.color = "rgba(0,212,255,0.90)")}
             onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.50)")}

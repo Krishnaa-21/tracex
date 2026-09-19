@@ -1,4 +1,5 @@
 import React from "react";
+import { useMode } from "../context/ModeContext";
 
 /**
  * TraceX brand component.
@@ -16,6 +17,9 @@ export default function Logo({
   showSubtitle = false,
   className = "",
 }) {
+  const { mode } = useMode ? useMode() : { mode: "analysis" };
+  const isStandardMode = mode === "standard";
+
   // Image dimensions keyed by size
   const dims = {
     xs: { img: "w-6 h-6",  title: "text-[12px]", sub: "text-[9px]" },
@@ -34,15 +38,25 @@ export default function Logo({
           src="/logo.png"
           alt="TraceX"
           className={`${d.img} object-contain flex-shrink-0`}
-          style={{ filter: "drop-shadow(0 0 14px rgba(0,229,200,0.50))" }}
+          style={
+            isStandardMode
+              ? { filter: "none" }
+              : { filter: "drop-shadow(0 0 14px rgba(0,229,200,0.50))" }
+          }
           draggable={false}
         />
         {showSubtitle && (
           <span
-            className={`${d.sub} font-mono tracking-widest uppercase text-center`}
-            style={{ color: "rgba(0,229,200,0.55)" }}
+            className={`${d.sub} font-mono tracking-widest uppercase text-center ${
+              isStandardMode ? "font-semibold text-[#0B3B60]" : ""
+            }`}
+            style={
+              isStandardMode
+                ? { color: "#0B3B60" }
+                : { color: "rgba(0,229,200,0.55)" }
+            }
           >
-            Cyber Intelligence
+            {isStandardMode ? "Cyber Crime Investigation Portal" : "Cyber Intelligence"}
           </span>
         )}
       </div>
@@ -56,24 +70,35 @@ export default function Logo({
         src="/icon.png"
         alt="TraceX"
         className={`${d.img} object-contain flex-shrink-0 rounded-lg`}
-        style={{ filter: "drop-shadow(0 0 10px rgba(0,229,200,0.45))" }}
+        style={
+          isStandardMode
+            ? { filter: "none", border: "1px solid #CBD5E1" }
+            : { filter: "drop-shadow(0 0 10px rgba(0,229,200,0.45))" }
+        }
         draggable={false}
       />
       <div className="flex flex-col leading-none">
         <span
           className={`${d.title} font-display font-bold tracking-tight`}
-          style={{
-            background: "linear-gradient(90deg, #00E5C8 0%, #00D4FF 60%, #7C3AED 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
+          style={
+            isStandardMode
+              ? { color: "#0B3B60" }
+              : {
+                  background: "linear-gradient(90deg, #00E5C8 0%, #00D4FF 60%, #7C3AED 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }
+          }
         >
           TraceX
         </span>
         {showSubtitle && (
-          <span className={`${d.sub} font-mono tracking-widest uppercase mt-0.5`} style={{ color: "rgba(0,212,255,0.50)" }}>
-            Cyber Intelligence
+          <span
+            className={`${d.sub} font-mono tracking-widest uppercase mt-0.5`}
+            style={isStandardMode ? { color: "#64748B" } : { color: "rgba(0,212,255,0.50)" }}
+          >
+            {isStandardMode ? "Investigation Portal" : "Cyber Intelligence"}
           </span>
         )}
       </div>

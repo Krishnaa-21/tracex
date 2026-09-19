@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMode } from "../../context/ModeContext";
 import { getOfficer, clearAuth, apiClient } from "../../api/client";
+import Logo from "../Logo";
 
 export default function StandardHeader({ onOpenNewInvestigation }) {
   const {

@@ -6,7 +6,14 @@ export default function StandardFooter() {
   const { language } = useMode();
 
   return (
-    <footer className="w-full bg-[#07263F] text-white border-t-4 border-[#0B3B60] mt-16">
+    <footer className="w-full bg-[#07263F] text-white border-t-2 border-[#0B3B60] mt-16 overflow-hidden">
+      {/* Indian Tricolor Accent Line */}
+      <div className="h-1 w-full flex">
+        <div className="h-full w-1/3 bg-[#FF9933]" />
+        <div className="h-full w-1/3 bg-white" />
+        <div className="h-full w-1/3 bg-[#128807]" />
+      </div>
+
       {/* Upper Footer: 4 Categorized Columns */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-[12px]">

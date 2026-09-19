@@ -955,3 +955,16 @@
 [data-mode="standard"][data-contrast="high"] * {
   border-color: #000000 !important;
 }
+
+/* ─── Login Page & Brand in Standard Mode ──────────────────── */
+[data-mode="standard"] .gov-login-container {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+[data-mode="standard"] .gov-login-card {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+

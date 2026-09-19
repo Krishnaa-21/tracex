@@ -80,7 +80,8 @@ export default function StandardHero({ onOpenNewInvestigation }) {
             <button
               type="button"
               onClick={onOpenNewInvestigation}
-              className="px-4 py-2 bg-white text-[#0B3B60] hover:bg-slate-100 font-bold text-xs rounded transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
+              aria-label="Register New Cyber Complaint or Evidence"
+              className="px-4 py-2 bg-white text-[#0B3B60] hover:bg-slate-100 font-bold text-xs rounded transition-colors flex items-center gap-2 shadow-xs cursor-pointer active:scale-98"
             >
               <Plus className="w-4 h-4 text-[#0B3B60]" />
               <span>Register New Cyber Complaint / Evidence</span>
@@ -89,6 +90,7 @@ export default function StandardHero({ onOpenNewInvestigation }) {
               href="https://cybercrime.gov.in"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Open National Citizen Portal (cybercrime.gov.in) in new tab"
               className="px-4 py-2 bg-[#07263F] hover:bg-[#051C30] text-white/90 font-medium text-xs rounded border border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span>National Citizen Portal (cybercrime.gov.in)</span>
