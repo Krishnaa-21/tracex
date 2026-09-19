@@ -7,11 +7,13 @@ import StatRow from "../components/StatRow";
 import PriorityTable from "../components/PriorityTable";
 import EvidenceTray from "../components/EvidenceTray";
 import HeatmapGrid from "../components/HeatmapGrid";
+import { useMode } from "../context/ModeContext";
 
 export default function Home() {
   // Use global openNewInvestigation handler from AppRouter
   const outletContext = useOutletContext();
   const openNewInvestigation = outletContext?.openNewInvestigation;
+  const { isStandardMode } = useMode();
 
   const [officer, setOfficerState] = useState(() => getOfficer() || { name: "Officer", station_name: "MP Cyber Cell" });
   const [stats, setStats] = useState({
@@ -81,6 +83,101 @@ export default function Home() {
     year: "numeric",
   });
 
+  // ── Standard / Government Mode Dashboard ──────────────────────────────────
+  if (isStandardMode) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-7 pb-16">
+        {/* 1. Page Header — formal operations room identity */}
+        <section className="gov-page-section-divider flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5">
+          <div>
+            {/* Date + system status */}
+            <div className="flex items-center gap-3 mb-2">
+              <div className="gov-date-label">{todayStr}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="gov-live-dot" />
+                <span className="gov-system-status">System Online</span>
+              </div>
+            </div>
+
+            <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight leading-none gov-station-name">
+              {officer.station_name || "Bhopal Cyber Operations Room"}
+            </h1>
+            <p className="text-[13px] text-[#475569] mt-2">
+              Logged in as{" "}
+              <span className="font-semibold text-[#0F172A]">{officer.name || "Investigator"}</span>
+              <span className="gov-officer-badge-chip ml-2 inline-block">{officer.badge_id || "IO"}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={fetchDashboardData}
+              title="Refresh operational data"
+              className="gov-refresh-btn"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              onClick={openNewInvestigation}
+              className="gov-new-investigation-btn"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Investigation</span>
+            </button>
+          </div>
+        </section>
+
+        {/* 2. Urgent Action Banner */}
+        <UrgentBanner cases={cases} />
+
+        {/* 3. Stat Row */}
+        <section className="gov-page-section-divider pb-4">
+          <StatRow stats={stats} />
+        </section>
+
+        {/* 4. Priority Cases Queue */}
+        <section className="space-y-3">
+          <PriorityTable
+            cases={cases}
+            isLoading={isLoading}
+            selectedDistrict={selectedDistrict}
+          />
+        </section>
+
+        {/* 5. Evidence Processing Tray */}
+        <section className="space-y-3 pt-2">
+          <div className="gov-section-divider flex items-center justify-between pb-2.5">
+            <div className="flex items-center gap-2">
+              <h2 className="gov-section-header">Evidence Ingestion &amp; Indexing Pipeline</h2>
+              <span className="gov-queue-count-badge">{unprocessedEvidence.length} in queue</span>
+            </div>
+            <span className="text-[11px] font-mono text-[#94A3B8]">
+              Automatic hashing, parsing &amp; multi-hop extraction
+            </span>
+          </div>
+          <EvidenceTray files={unprocessedEvidence} isLoading={isLoading} />
+        </section>
+
+        {/* 6. Jurisdictional Heatmap */}
+        <section className="space-y-3 pt-2">
+          <div className="gov-section-divider flex items-center justify-between pb-2.5">
+            <h2 className="gov-section-header">Jurisdictional Fraud Density Heatmap</h2>
+            <span className="text-[11px] font-mono text-[#94A3B8]">
+              Click any district to filter priority incidents
+            </span>
+          </div>
+          <HeatmapGrid
+            heatmap={heatmap}
+            isLoading={isLoading}
+            selectedDistrict={selectedDistrict}
+            onSelectDistrict={(dist) => setSelectedDistrict(dist)}
+          />
+        </section>
+      </div>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto space-y-7 pb-16">
       {/* 1. Header — operations room status line */}
@@ -149,10 +246,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. Urgent Action Banner (renders only if freeze-relevant high-risk case exists) */}
+      {/* 2. Urgent Action Banner */}
       <UrgentBanner cases={cases} />
 
-      {/* 3. Stat Row (Key incident load metrics) */}
+      {/* 3. Stat Row */}
       <section className="border-b border-border pb-4">
         <StatRow stats={stats} />
       </section>

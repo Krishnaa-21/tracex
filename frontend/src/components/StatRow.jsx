@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ShieldAlert, Activity, Clock, CheckCircle2 } from "lucide-react";
+import { useMode } from "../context/ModeContext";
 
 /** Animated counter — counts up from 0 to target value */
-function AnimatedNumber({ value }) {
+function AnimatedNumber({ value, isStandardMode }) {
   const [display, setDisplay] = useState(0);
-  const ref = useRef(null);
 
   useEffect(() => {
+    if (isStandardMode) { setDisplay(value); return; } // static in gov mode
     if (value === 0) { setDisplay(0); return; }
     let start = 0;
     const duration = 800;
@@ -17,7 +18,7 @@ function AnimatedNumber({ value }) {
       if (start >= value) clearInterval(timer);
     }, 16);
     return () => clearInterval(timer);
-  }, [value]);
+  }, [value, isStandardMode]);
 
   return <span>{display}</span>;
 }
@@ -27,12 +28,21 @@ const STAT_ITEMS = (stats) => [
     label: "High-Risk Cases",
     value: stats.high_risk_cases ?? 0,
     icon: ShieldAlert,
+    // Analysis Mode colors
     accentColor: "#FF3B5C",
     glowColor: "rgba(255,59,92,0.35)",
     bgColor: "rgba(255,59,92,0.08)",
     borderColor: "rgba(255,59,92,0.25)",
     topRail: "#FF3B5C",
     isUrgent: (stats.high_risk_cases || 0) > 0,
+    // Standard / Government Mode colors
+    govColor: "#B91C1C",
+    govBg: "#FEF2F2",
+    govBorder: "#FCA5A5",
+    govRail: "#B91C1C",
+    govIconBg: "#FEE2E2",
+    govIconBorder: "#FCA5A5",
+    govSublabel: (stats.high_risk_cases || 0) > 0 ? "Requires immediate action" : "No critical cases",
   },
   {
     label: "Active Case Load",
@@ -44,6 +54,13 @@ const STAT_ITEMS = (stats) => [
     borderColor: "rgba(0,212,255,0.18)",
     topRail: "#00D4FF",
     isUrgent: false,
+    govColor: "#0B3B60",
+    govBg: "#EFF6FF",
+    govBorder: "#BFDBFE",
+    govRail: "#0B3B60",
+    govIconBg: "#DBEAFE",
+    govIconBorder: "#BFDBFE",
+    govSublabel: "Currently under investigation",
   },
   {
     label: "Awaiting Correlation",
@@ -55,6 +72,13 @@ const STAT_ITEMS = (stats) => [
     borderColor: "rgba(245,158,11,0.22)",
     topRail: "#F59E0B",
     isUrgent: (stats.awaiting_correlation || 0) > 0,
+    govColor: "#D97706",
+    govBg: "#FFFBEB",
+    govBorder: "#FCD34D",
+    govRail: "#D97706",
+    govIconBg: "#FEF3C7",
+    govIconBorder: "#FCD34D",
+    govSublabel: (stats.awaiting_correlation || 0) > 0 ? "Pending multi-source analysis" : "All cases correlated",
   },
   {
     label: "Closed This Month",
@@ -66,12 +90,65 @@ const STAT_ITEMS = (stats) => [
     borderColor: "rgba(16,185,129,0.20)",
     topRail: "#10B981",
     isUrgent: false,
+    govColor: "#047857",
+    govBg: "#F0FDF4",
+    govBorder: "#6EE7B7",
+    govRail: "#047857",
+    govIconBg: "#D1FAE5",
+    govIconBorder: "#6EE7B7",
+    govSublabel: "Resolved & archived",
   },
 ];
 
 export default function StatRow({ stats = {} }) {
+  const { isStandardMode } = useMode();
   const items = STAT_ITEMS(stats);
 
+  if (isStandardMode) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className="gov-stat-card relative flex flex-col justify-between overflow-hidden"
+            >
+              {/* Colored top rail — solid, no glow */}
+              <div
+                className="gov-stat-top-rail"
+                style={{ background: item.govRail }}
+              />
+
+              {/* Header: icon + label */}
+              <div className="flex items-center justify-between mb-3 mt-1">
+                <span className="gov-stat-label">{item.label}</span>
+                <div
+                  className="gov-stat-icon-box"
+                  style={{ background: item.govIconBg, borderColor: item.govIconBorder }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: item.govColor }} />
+                </div>
+              </div>
+
+              {/* Value */}
+              <div
+                className="gov-stat-value"
+                style={{ color: item.govColor }}
+              >
+                <AnimatedNumber value={item.value} isStandardMode={isStandardMode} />
+              </div>
+
+              {/* Sub-label */}
+              <div className="gov-stat-sublabel">{item.govSublabel}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {items.map((item) => {
@@ -138,7 +215,7 @@ export default function StatRow({ stats = {} }) {
                 textShadow: item.isUrgent ? `0 0 20px ${item.glowColor}` : "none",
               }}
             >
-              <AnimatedNumber value={item.value} />
+              <AnimatedNumber value={item.value} isStandardMode={false} />
             </div>
 
             {/* Subtle sub-label */}

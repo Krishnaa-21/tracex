@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import apiClient from "../api/client";
 import NetworkGraph from "../components/NetworkGraph";
+import { useMode } from "../context/ModeContext";
 
 const SCAM_TYPE_LABELS = {
   digital_scam: "Digital Scam",
@@ -20,6 +21,7 @@ export default function ConnectionsGraph() {
   const { caseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isStandardMode } = useMode();
 
   const [allCases, setAllCases] = useState([]);
   const [caseData, setCaseData] = useState(null);
@@ -176,7 +178,7 @@ export default function ConnectionsGraph() {
         </div>
       )}
 
-      {/* Full-Width Redesigned Graph Visualization Workspace */}
+      {/* Full-Width Graph Visualization Workspace */}
       <section className="w-full">
         <NetworkGraph
           nodes={graphData.nodes}
@@ -188,98 +190,170 @@ export default function ConnectionsGraph() {
       </section>
 
       {/* AI Case Narrative */}
-      <section className="border border-border rounded-xl bg-bg shadow-sm overflow-hidden">
-        <div className="p-5 space-y-3">
-          <div className="border-b border-border pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-accent" />
-              <div>
-                <h3 className="text-[14px] tracking-wide font-bold text-text">
-                  AI Case Narrative
-                </h3>
-                <p className="text-[11px] text-textFaint mt-0.5">
-                  A simple explanation of what the relationship map means
-                </p>
+      {isStandardMode ? (
+        /* ── Standard Mode: formal government panel ────────────────────── */
+        <section className="gov-ai-narrative-panel">
+          <div className="gov-ai-narrative-header">
+            <div>
+              <div className="gov-ai-narrative-title flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#0B3B60]" />
+                AI Case Narrative
               </div>
+              <p className="gov-ai-narrative-subtitle">A structured explanation of the relationship map</p>
             </div>
             <button
               onClick={handleRegenerateSummary}
               disabled={isRegeneratingSummary}
-              className="text-[11px] font-semibold text-accent hover:text-accentHover hover:underline disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+              className="gov-regen-btn"
             >
-              <RefreshCw
-                className={`w-3 h-3 ${
-                  isRegeneratingSummary ? "animate-spin" : ""
-                }`}
-              />
+              <RefreshCw className={`w-3 h-3 ${isRegeneratingSummary ? "animate-spin" : ""}`} />
               <span>Regenerate</span>
             </button>
           </div>
 
-          {summaryData ? (
-            <div className="bg-bg/70 border border-border/80 rounded-xl p-5 shadow-inner space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 shrink-0 mt-0.5">
-                  <Sparkles className="w-4 h-4 text-accent" />
-                </div>
-                <div className="space-y-3 flex-1">
-                  <p className="text-[13px] leading-relaxed text-text font-normal whitespace-pre-line selection:bg-accent/20">
-                    {summaryData.narrative_text}
-                  </p>
+          <div className="gov-ai-narrative-body">
+            {summaryData ? (
+              <div className="gov-narrative-inner-box">
+                <p className="gov-ai-narrative-text">{summaryData.narrative_text}</p>
 
-                  {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
-                    <div className="pt-2 border-t border-border/60 flex flex-wrap gap-2 items-center">
-                      <span className="text-[11px] font-semibold text-textFaint uppercase tracking-wider">
-                        Key Directives:
-                      </span>
-                      {summaryData.key_takeaways.map((takeaway, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 text-accent text-[11px] font-medium border border-accent/20"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                          {takeaway}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[11px] text-textFaint">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>
-                    Synthesized via{" "}
-                    <span className="font-semibold text-textDim">
-                      {summaryData.model_version || "Deterministic Narrative"}
+                {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
+                  <div className="pt-3 border-t border-[#E2E8F0] mt-3 flex flex-wrap gap-2 items-center">
+                    <span className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
+                      Key Directives:
                     </span>
+                    {summaryData.key_takeaways.map((takeaway, i) => (
+                      <span key={i} className="gov-directive-tag">
+                        <span className="tag-dot" />
+                        {takeaway}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="gov-narrative-meta mt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="meta-dot" />
+                    <span>
+                      Synthesized via{" "}
+                      <span className="font-semibold text-[#334155]">
+                        {summaryData.model_version || "Deterministic Narrative"}
+                      </span>
+                    </span>
+                  </div>
+                  <span className="font-mono text-[#64748B]">
+                    {summaryData.generated_at
+                      ? `Generated at ${new Date(summaryData.generated_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}`
+                      : ""}
                   </span>
                 </div>
-                <span className="font-mono text-textDim">
-                  {summaryData.generated_at
-                    ? `Generated at ${new Date(summaryData.generated_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}`
-                    : ""}
-                </span>
               </div>
+            ) : (
+              <div className="text-[12px] text-[#475569] py-4 text-center space-y-1">
+                <p className="font-medium text-[#0F172A]">No correlation narrative generated yet.</p>
+                <p className="text-[11px] text-[#64748B]">
+                  Upload multi-source evidence and run correlation to synthesize an AI brief.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : (
+        /* ── Analysis Mode: original dark panel ────────────────────────── */
+        <section className="border border-border rounded-xl bg-bg shadow-sm overflow-hidden">
+          <div className="p-5 space-y-3">
+            <div className="border-b border-border pb-2 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-accent" />
+                <div>
+                  <h3 className="text-[14px] tracking-wide font-bold text-text">
+                    AI Case Narrative
+                  </h3>
+                  <p className="text-[11px] text-textFaint mt-0.5">
+                    A simple explanation of what the relationship map means
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRegenerateSummary}
+                disabled={isRegeneratingSummary}
+                className="text-[11px] font-semibold text-accent hover:text-accentHover hover:underline disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw
+                  className={`w-3 h-3 ${isRegeneratingSummary ? "animate-spin" : ""}`}
+                />
+                <span>Regenerate</span>
+              </button>
             </div>
-          ) : (
-            <div className="text-[12px] text-textDim py-4 text-center space-y-1">
-              <p className="font-medium text-text">
-                No correlation narrative generated yet.
-              </p>
-              <p className="text-[11px] text-textFaint">
-                Upload multi-source evidence and run correlation to synthesize an
-                AI brief.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+
+            {summaryData ? (
+              <div className="bg-bg/70 border border-border/80 rounded-xl p-5 shadow-inner space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4 text-accent" />
+                  </div>
+                  <div className="space-y-3 flex-1">
+                    <p className="text-[13px] leading-relaxed text-text font-normal whitespace-pre-line selection:bg-accent/20">
+                      {summaryData.narrative_text}
+                    </p>
+
+                    {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
+                      <div className="pt-2 border-t border-border/60 flex flex-wrap gap-2 items-center">
+                        <span className="text-[11px] font-semibold text-textFaint uppercase tracking-wider">
+                          Key Directives:
+                        </span>
+                        {summaryData.key_takeaways.map((takeaway, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 text-accent text-[11px] font-medium border border-accent/20"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                            {takeaway}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[11px] text-textFaint">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>
+                      Synthesized via{" "}
+                      <span className="font-semibold text-textDim">
+                        {summaryData.model_version || "Deterministic Narrative"}
+                      </span>
+                    </span>
+                  </div>
+                  <span className="font-mono text-textDim">
+                    {summaryData.generated_at
+                      ? `Generated at ${new Date(summaryData.generated_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}`
+                      : ""}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-[12px] text-textDim py-4 text-center space-y-1">
+                <p className="font-medium text-text">
+                  No correlation narrative generated yet.
+                </p>
+                <p className="text-[11px] text-textFaint">
+                  Upload multi-source evidence and run correlation to synthesize an
+                  AI brief.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

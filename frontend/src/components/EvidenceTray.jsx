@@ -1,5 +1,6 @@
 import React from "react";
 import { FileText, Clock, CheckCircle2, AlertCircle, Hash } from "lucide-react";
+import { useMode } from "../context/ModeContext";
 
 const STATUS_CONFIG = {
   pending: {
@@ -8,6 +9,10 @@ const STATUS_CONFIG = {
     color: "#F59E0B",
     bg: "rgba(245,158,11,0.10)",
     border: "rgba(245,158,11,0.25)",
+    // Standard Mode
+    govColor: "#D97706",
+    govBg: "#FEF3C7",
+    govBorder: "#FCD34D",
   },
   processing: {
     icon: Clock,
@@ -15,6 +20,9 @@ const STATUS_CONFIG = {
     color: "#00D4FF",
     bg: "rgba(0,212,255,0.08)",
     border: "rgba(0,212,255,0.20)",
+    govColor: "#0369A1",
+    govBg: "#E0F2FE",
+    govBorder: "#7DD3FC",
   },
   completed: {
     icon: CheckCircle2,
@@ -22,6 +30,9 @@ const STATUS_CONFIG = {
     color: "#10B981",
     bg: "rgba(16,185,129,0.10)",
     border: "rgba(16,185,129,0.22)",
+    govColor: "#047857",
+    govBg: "#D1FAE5",
+    govBorder: "#6EE7B7",
   },
   error: {
     icon: AlertCircle,
@@ -29,10 +40,59 @@ const STATUS_CONFIG = {
     color: "#FF3B5C",
     bg: "rgba(255,59,92,0.10)",
     border: "rgba(255,59,92,0.22)",
+    govColor: "#B91C1C",
+    govBg: "#FEE2E2",
+    govBorder: "#FCA5A5",
   },
 };
 
-function EvidenceRow({ file, idx }) {
+function GovEvidenceRow({ file, idx }) {
+  const status = (file.status || "pending").toLowerCase();
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  const Icon = cfg.icon;
+
+  return (
+    <div className="gov-evidence-row">
+      {/* File icon */}
+      <div className="gov-evidence-file-icon">
+        <FileText className="w-3.5 h-3.5 text-[#64748B]" />
+      </div>
+
+      {/* File info */}
+      <div className="flex-1 min-w-0">
+        <div className="gov-evidence-filename truncate">{file.filename || file.name || `evidence-${idx + 1}`}</div>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <Hash className="w-2.5 h-2.5 flex-shrink-0 text-[#94A3B8]" />
+          <span className="gov-evidence-hash truncate">
+            {file.sha256 || file.hash || "hash pending..."}
+          </span>
+        </div>
+      </div>
+
+      {/* File type badge */}
+      {file.file_type && (
+        <span className="gov-evidence-type-badge hidden sm:inline">
+          {file.file_type.toUpperCase()}
+        </span>
+      )}
+
+      {/* Status badge */}
+      <div
+        className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold flex-shrink-0"
+        style={{
+          background: cfg.govBg,
+          border: `1px solid ${cfg.govBorder}`,
+          color: cfg.govColor,
+        }}
+      >
+        <Icon className="w-3 h-3" />
+        <span>{cfg.label}</span>
+      </div>
+    </div>
+  );
+}
+
+function AnalysisEvidenceRow({ file, idx }) {
   const status = (file.status || "pending").toLowerCase();
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   const Icon = cfg.icon;
@@ -100,6 +160,48 @@ function EvidenceRow({ file, idx }) {
 }
 
 export default function EvidenceTray({ files = [], isLoading = false }) {
+  const { isStandardMode } = useMode();
+
+  if (isStandardMode) {
+    if (isLoading) {
+      return (
+        <div className="gov-evidence-loading">
+          Scanning evidence ingestion pipeline…
+        </div>
+      );
+    }
+
+    if (!files.length) {
+      return (
+        <div className="gov-evidence-empty">
+          No evidence files in processing queue
+        </div>
+      );
+    }
+
+    return (
+      <div className="gov-evidence-container">
+        {/* Formal header bar */}
+        <div className="gov-evidence-header">
+          <span className="gov-evidence-header-title">
+            Evidence Ingestion Pipeline
+          </span>
+          <span className="text-[10.5px] font-mono text-[#64748B]">
+            {files.length} {files.length === 1 ? "entry" : "entries"}
+          </span>
+        </div>
+
+        {/* Evidence rows */}
+        <div className="max-h-52 overflow-y-auto">
+          {files.map((file, idx) => (
+            <GovEvidenceRow key={file.id || idx} file={file} idx={idx} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
   if (isLoading) {
     return (
       <div
@@ -160,7 +262,7 @@ export default function EvidenceTray({ files = [], isLoading = false }) {
       {/* Evidence rows */}
       <div className="max-h-52 overflow-y-auto">
         {files.map((file, idx) => (
-          <EvidenceRow key={file.id || idx} file={file} idx={idx} />
+          <AnalysisEvidenceRow key={file.id || idx} file={file} idx={idx} />
         ))}
       </div>
     </div>

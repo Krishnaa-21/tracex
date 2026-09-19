@@ -1,6 +1,8 @@
 import React from "react";
+import { useMode } from "../context/ModeContext";
 
-const CONFIG = {
+// Analysis Mode config (neon glow badges)
+const ANALYSIS_CONFIG = {
   critical: {
     label: "CRITICAL",
     color: "#FF3B5C",
@@ -39,9 +41,21 @@ const CONFIG = {
 };
 
 export default function RiskTag({ level = "low" }) {
+  const { isStandardMode } = useMode();
   const key = (level || "low").toLowerCase();
-  const cfg = CONFIG[key] || CONFIG.low;
 
+  if (isStandardMode) {
+    // Flat government badge — no box-shadow glow
+    const govKey = key === "med" ? "medium" : key;
+    return (
+      <span className={`gov-risk-tag ${govKey === "critical" ? "critical" : govKey === "high" ? "high" : govKey === "medium" ? "medium" : "low"}`}>
+        {key === "critical" ? "CRITICAL" : key === "high" ? "HIGH" : key === "medium" || key === "med" ? "MEDIUM" : "LOW"}
+      </span>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
+  const cfg = ANALYSIS_CONFIG[key] || ANALYSIS_CONFIG.low;
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold rounded tracking-widest uppercase"

@@ -1,9 +1,11 @@
 import React from "react";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useMode } from "../context/ModeContext";
 
 export default function UrgentBanner({ cases = [] }) {
   const navigate = useNavigate();
+  const { isStandardMode } = useMode();
 
   // Find the highest-risk case requiring immediate action
   const urgentCase = cases.find(
@@ -12,6 +14,43 @@ export default function UrgentBanner({ cases = [] }) {
 
   if (!urgentCase) return null;
 
+  // ── Standard / Government Mode ────────────────────────────────────────────
+  if (isStandardMode) {
+    return (
+      <div className="gov-urgent-banner">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Alert icon */}
+          <div className="gov-urgent-icon-box">
+            <AlertTriangle className="w-4 h-4" style={{ color: "#B91C1C" }} />
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="gov-urgent-label">⚠ CRITICAL ALERT</span>
+            </div>
+            <p className="text-[13px] font-semibold text-[#0F172A] leading-snug truncate">
+              <span className="font-mono text-[#B91C1C]">{urgentCase.case_number}</span>
+              {" · "}
+              {urgentCase.victim_name} — Account freeze action recommended
+            </p>
+            {urgentCase.why_flagged && (
+              <p className="text-[11.5px] text-[#475569] mt-0.5 truncate">{urgentCase.why_flagged}</p>
+            )}
+          </div>
+        </div>
+
+        <button
+          onClick={() => navigate(`/cases/${urgentCase.id}/graph`)}
+          className="gov-urgent-action-btn"
+        >
+          <span>Take Action</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
   return (
     <div
       className="relative flex items-center justify-between gap-4 px-4 py-3 rounded-md overflow-hidden animate-fade-in-up"

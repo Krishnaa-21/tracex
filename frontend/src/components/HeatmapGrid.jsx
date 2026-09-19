@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { MapPin, Info, Flame, X } from "lucide-react";
+import { useMode } from "../context/ModeContext";
 
+// Analysis Mode level config (neon)
 const LEVEL_CONFIG = {
   high: {
     color: "#F87171",
@@ -32,9 +34,22 @@ const LEVEL_CONFIG = {
   },
 };
 
-function getTileConfig(level, isSelected) {
+// Standard / Government Mode level config (flat, no glow)
+const GOV_LEVEL_CONFIG = {
+  high: { color: "#DC2626", bg: "#FEF2F2", border: "#FCA5A5", barColor: "#DC2626", label: "HIGH" },
+  medium: { color: "#D97706", bg: "#FFFBEB", border: "#FCD34D", barColor: "#D97706", label: "MEDIUM" },
+  med: { color: "#D97706", bg: "#FFFBEB", border: "#FCD34D", barColor: "#D97706", label: "MEDIUM" },
+  low: { color: "#047857", bg: "#F0FDF4", border: "#6EE7B7", barColor: "#047857", label: "LOW" },
+};
+
+function getTileConfig(level) {
   const norm = (level || "low").toLowerCase();
   return LEVEL_CONFIG[norm] || LEVEL_CONFIG.low;
+}
+
+function getGovTileConfig(level) {
+  const norm = (level || "low").toLowerCase();
+  return GOV_LEVEL_CONFIG[norm] || GOV_LEVEL_CONFIG.low;
 }
 
 export default function HeatmapGrid({
@@ -43,10 +58,15 @@ export default function HeatmapGrid({
   selectedDistrict = null,
   onSelectDistrict = () => {},
 }) {
+  const { isStandardMode } = useMode();
   const [filterLevel, setFilterLevel] = useState("all");
 
   if (isLoading) {
-    return (
+    return isStandardMode ? (
+      <div className="gov-heatmap-loading">
+        Analyzing jurisdictional fraud telemetry…
+      </div>
+    ) : (
       <div
         className="py-10 text-center font-mono text-[12px] rounded-md"
         style={{
@@ -68,6 +88,147 @@ export default function HeatmapGrid({
   const sortedByCount = [...(heatmap || [])].sort((a, b) => b.case_count - a.case_count);
   const topHotspot = sortedByCount[0];
 
+  // ── Standard / Government Mode ────────────────────────────────────────────
+  if (isStandardMode) {
+    return (
+      <div className="space-y-4">
+        {/* Top banner */}
+        <div className="gov-heatmap-banner">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
+              style={{ background: "#FEE2E2", border: "1px solid #FCA5A5" }}
+            >
+              <Flame className="w-4 h-4 text-[#DC2626]" />
+            </div>
+            <div className="text-[12.5px]">
+              <span className="font-semibold text-[#0F172A]">Regional Fraud Telemetry: </span>
+              {topHotspot ? (
+                <span className="text-[#334155]">
+                  Primary concentration in{" "}
+                  <strong className="text-[#DC2626]">{topHotspot.district}</strong>
+                  {" "}({topHotspot.case_count} cases) across {heatmap.length} jurisdictions.
+                </span>
+              ) : (
+                <span className="text-[#475569]">Resolved from static IFSC and Postal PIN databases.</span>
+              )}
+            </div>
+          </div>
+
+          {/* Level filter buttons */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {["all", "high", "medium", "low"].map((lvl) => (
+              <button
+                key={lvl}
+                onClick={() => setFilterLevel(lvl)}
+                className={`gov-heatmap-filter-btn ${filterLevel === lvl ? "active" : ""}`}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* District filter active notice */}
+        {selectedDistrict && (
+          <div className="gov-filter-active-notice">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Filtering cases for <strong>{selectedDistrict}</strong></span>
+            </div>
+            <button
+              onClick={() => onSelectDistrict(null)}
+              className="flex items-center gap-1 text-[11px] font-mono hover:opacity-75 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </button>
+          </div>
+        )}
+
+        {/* District tiles grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+          {filteredHeatmap.map((item) => {
+            const isSelected = selectedDistrict?.toLowerCase() === item.district.toLowerCase();
+            const cfg = getGovTileConfig(item.level);
+            const percent = Math.min(100, Math.round((item.case_count / Math.max(1, topHotspot?.case_count || 1)) * 100));
+
+            return (
+              <div
+                key={item.district}
+                onClick={() => onSelectDistrict(isSelected ? null : item.district)}
+                className={`gov-district-tile ${isSelected ? "selected" : ""}`}
+                style={{
+                  borderColor: isSelected ? "#0B3B60" : cfg.border,
+                  backgroundColor: isSelected ? "#EFF6FF" : cfg.bg,
+                }}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-1">
+                    <span className="district-name truncate">{item.district}</span>
+                    <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: `${cfg.color}90` }} />
+                  </div>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span
+                      className="district-level-label"
+                      style={{ color: cfg.color }}
+                    >
+                      {item.level || "low"}
+                    </span>
+                    <span
+                      className="district-count"
+                      style={{ color: isSelected ? "#0B3B60" : cfg.color }}
+                    >
+                      {item.case_count}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Intensity bar */}
+                <div className="gov-district-intensity-bar">
+                  <div
+                    className="gov-district-intensity-fill"
+                    style={{
+                      width: `${percent}%`,
+                      background: isSelected ? "#0B3B60" : cfg.barColor,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="gov-heatmap-legend flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11.5px]">
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748B]">
+              Density Legend:
+            </span>
+            {[
+              { color: "#047857", border: "#6EE7B7", bg: "#D1FAE5", label: "Low (1–2)" },
+              { color: "#D97706", border: "#FCD34D", bg: "#FEF3C7", label: "Medium (3–5)" },
+              { color: "#DC2626", border: "#FCA5A5", bg: "#FEE2E2", label: "High (6+)" },
+            ].map((l) => (
+              <span key={l.label} className="inline-flex items-center gap-1.5 text-[#334155]">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0 border"
+                  style={{ background: l.bg, borderColor: l.border }}
+                />
+                <span>{l.label}</span>
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 text-[#64748B]">
+            <Info className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-[11px] font-mono">runs fully offline, from locally bundled lookups</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Analysis Mode (original) ──────────────────────────────────────────────
   return (
     <div className="space-y-4">
       {/* Top banner */}
@@ -154,7 +315,7 @@ export default function HeatmapGrid({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
         {filteredHeatmap.map((item, idx) => {
           const isSelected = selectedDistrict?.toLowerCase() === item.district.toLowerCase();
-          const cfg = getTileConfig(item.level, isSelected);
+          const cfg = getTileConfig(item.level);
           const percent = Math.min(100, Math.round((item.case_count / Math.max(1, topHotspot?.case_count || 1)) * 100));
 
           return (

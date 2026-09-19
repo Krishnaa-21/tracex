@@ -12,10 +12,12 @@ import {
 } from "lucide-react";
 import apiClient from "../api/client";
 import ReportPasswordModal from "../components/ReportPasswordModal";
+import { useMode } from "../context/ModeContext";
 
 export default function Reports() {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const { isStandardMode } = useMode();
 
   const [allCases, setAllCases] = useState([]);
   const [caseData, setCaseData] = useState(null);
@@ -153,7 +155,7 @@ export default function Reports() {
             <h1 className="text-xl font-bold text-text tracking-tight flex items-center gap-2">
               <span>Case</span>
               <span className="font-mono text-accent">{caseData?.case_number || `#${caseId}`}</span>
-              <span className="text-textDim font-normal text-sm hidden sm:inline">â€” Certified Forensic Reports</span>
+              <span className="text-textDim font-normal text-sm hidden sm:inline">— Certified Forensic Reports</span>
             </h1>
 
             {/* Quick Case Switcher */}
@@ -196,24 +198,35 @@ export default function Reports() {
         </div>
       </section>
 
-      {/* 2. Download Packages â€” only tab */}
-      <div
-        className="flex items-center gap-1.5 pb-1"
-        style={{ borderBottom: "1px solid rgba(0,212,255,0.10)" }}
-      >
-        <div
-          className="flex items-center gap-2 px-4 py-2 text-[12px] font-semibold rounded-t"
-          style={{
-            color: "#00D4FF",
-            background: "rgba(0,212,255,0.06)",
-            border: "1px solid rgba(0,212,255,0.18)",
-            borderBottom: "1px solid rgba(5,9,20,0.95)",
-          }}
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Download Packages</span>
+      {/* 2. Download Packages tab strip */}
+      {isStandardMode ? (
+        /* ── Standard Mode: formal navy tab header ── */
+        <div className="gov-reports-tab-strip">
+          <div className="gov-reports-tab-active">
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Packages</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ── Analysis Mode: original cyan tab ── */
+        <div
+          className="flex items-center gap-1.5 pb-1"
+          style={{ borderBottom: "1px solid rgba(0,212,255,0.10)" }}
+        >
+          <div
+            className="flex items-center gap-2 px-4 py-2 text-[12px] font-semibold rounded-t"
+            style={{
+              color: "#00D4FF",
+              background: "rgba(0,212,255,0.06)",
+              border: "1px solid rgba(0,212,255,0.18)",
+              borderBottom: "1px solid rgba(5,9,20,0.95)",
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Packages</span>
+          </div>
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (
@@ -225,19 +238,75 @@ export default function Reports() {
 
       {/* 3. Download Package Cards */}
       <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card 1: Investigative Brief */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* Card 1: Investigative Brief */}
+          {isStandardMode ? (
+            <div className="gov-report-card">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded gov-report-icon-box-blue">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Investigative Brief Dossier</h3>
+                    <span className="text-[11px] text-[#64748B]">Sec 65B Indian Evidence Act Certified</span>
+                  </div>
+                </div>
+
+                <p className="text-[12px] text-[#475569] leading-relaxed">
+                  A high-fidelity law enforcement dossier containing the executive narrative, category entity landscape, multi-hop correlation matrix, chronological case timeline, and Section 91 CrPC freeze directives.
+                </p>
+
+                <ul className="space-y-1.5 text-[11.5px] text-[#475569] pt-1">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
+                    <span>30-second executive summary &amp; risk progress score</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
+                    <span>Category breakdown matching network graph color language</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
+                    <span>Multi-hop correlation matrix with confidence scoring</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
+                    <span>Section 91 CrPC bank debit-freeze &amp; telecom seizure directives</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex flex-col gap-2">
+                <button
+                  onClick={handleOpenBriefModal}
+                  disabled={isGeneratingBrief}
+                  className="gov-report-brief-btn disabled:opacity-50"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{isGeneratingBrief ? "Encrypting & Synthesizing..." : "Download Password-Protected Brief PDF"}</span>
+                </button>
+                {briefHash && (
+                  <div className="gov-sha256-row">
+                    <span className="truncate">SHA-256: {briefHash}</span>
+                    <span className="verified-badge">Encrypted &amp; Verified</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
             <div className="flex flex-col justify-between bg-bg border border-border rounded-xl p-5 shadow-sm space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-text">Investigative Brief Dossier</h3>
-                      <span className="text-[11px] text-textFaint">Sec 65B Indian Evidence Act Certified</span>
-                    </div>
+                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <FileText className="w-5 h-5" />
                   </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-text">Investigative Brief Dossier</h3>
+                    <span className="text-[11px] text-textFaint">Sec 65B Indian Evidence Act Certified</span>
+                  </div>
+                </div>
 
                 <p className="text-[12px] text-textDim leading-relaxed">
                   A high-fidelity law enforcement dossier containing the executive narrative, category entity landscape, multi-hop correlation matrix, chronological case timeline, and Section 91 CrPC freeze directives.
@@ -246,7 +315,7 @@ export default function Reports() {
                 <ul className="space-y-1.5 text-[11.5px] text-textDim pt-1">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span>30-second executive summary & risk progress score</span>
+                    <span>30-second executive summary &amp; risk progress score</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -258,7 +327,7 @@ export default function Reports() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span>Section 91 CrPC bank debit-freeze & telecom seizure directives</span>
+                    <span>Section 91 CrPC bank debit-freeze &amp; telecom seizure directives</span>
                   </li>
                 </ul>
               </div>
@@ -280,19 +349,75 @@ export default function Reports() {
                 )}
               </div>
             </div>
+          )}
 
-            {/* Card 2: Takedown Request */}
+          {/* Card 2: Takedown Request */}
+          {isStandardMode ? (
+            <div className="gov-report-card">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded gov-report-icon-box-red">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Statutory Takedown Notice</h3>
+                    <span className="text-[11px] text-[#64748B]">Section 69A Information Technology Act</span>
+                  </div>
+                </div>
+
+                <p className="text-[12px] text-[#475569] leading-relaxed">
+                  Statutory emergency advisory notice served upon domain registrars, hosting providers, ISPs, and telecom intermediaries with mandatory 24-hour compliance terms.
+                </p>
+
+                <ul className="space-y-1.5 text-[11.5px] text-[#475569] pt-1">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C]" />
+                    <span>Emergency 24-hour public resolution disabling &amp; DNS sinkhole mandate</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C]" />
+                    <span>Cyber attack infrastructure table with priority CRITICAL/HIGH badges</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C]" />
+                    <span>180-day server access log preservation order under Section 67C IT Act</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C]" />
+                    <span>Threat intelligence &amp; forensic justification for blocking</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex flex-col gap-2">
+                <button
+                  onClick={handleOpenTakedownModal}
+                  disabled={isGeneratingTakedown}
+                  className="gov-report-takedown-btn disabled:opacity-50"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{isGeneratingTakedown ? "Encrypting & Synthesizing..." : "Download Password-Protected Takedown PDF"}</span>
+                </button>
+                {takedownHash && (
+                  <div className="gov-sha256-row">
+                    <span className="truncate">SHA-256: {takedownHash}</span>
+                    <span className="verified-badge">Encrypted &amp; Verified</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
             <div className="flex flex-col justify-between bg-bg border border-border rounded-xl p-5 shadow-sm space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                      <ShieldAlert className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-text">Statutory Takedown Notice</h3>
-                      <span className="text-[11px] text-textFaint">Section 69A Information Technology Act</span>
-                    </div>
+                  <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <ShieldAlert className="w-5 h-5" />
                   </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-text">Statutory Takedown Notice</h3>
+                    <span className="text-[11px] text-textFaint">Section 69A Information Technology Act</span>
+                  </div>
+                </div>
 
                 <p className="text-[12px] text-textDim leading-relaxed">
                   Statutory emergency advisory notice served upon domain registrars, hosting providers, ISPs, and telecom intermediaries with mandatory 24-hour compliance terms.
@@ -301,7 +426,7 @@ export default function Reports() {
                 <ul className="space-y-1.5 text-[11.5px] text-textDim pt-1">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    <span>Emergency 24-hour public resolution disabling & DNS sinkhole mandate</span>
+                    <span>Emergency 24-hour public resolution disabling &amp; DNS sinkhole mandate</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
@@ -313,7 +438,7 @@ export default function Reports() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    <span>Threat intelligence & forensic justification for blocking</span>
+                    <span>Threat intelligence &amp; forensic justification for blocking</span>
                   </li>
                 </ul>
               </div>
@@ -335,8 +460,9 @@ export default function Reports() {
                 )}
               </div>
             </div>
-          </div>
+          )}
         </div>
+      </div>
 
       {/* Password Protection Modal */}
       <ReportPasswordModal
