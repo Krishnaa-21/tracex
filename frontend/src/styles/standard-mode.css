@@ -1,0 +1,168 @@
+/* ==========================================================================
+   TraceX — Standard Mode (Official Government Portal Skin)
+   Design Inspirations: USWDS, VA.gov, cybercrime.gov.in, XYZ.gov.in
+   Aesthetics: Clean white/light-gray, official navy blue, high contrast,
+               minimal shadows, no dark theme, no neon glow, no glassmorphism.
+   ========================================================================== */
+
+[data-mode="standard"] {
+  /* ── Surfaces ───────────────────────────────────────────── */
+  --paper:          #F4F6F9;        /* accessible light portal background */
+  --paper-mid:      #FFFFFF;        /* card paper layer */
+  --panel:          #FFFFFF;        /* clean white card surface */
+  --panel-solid:    #FFFFFF;        /* non-glass card */
+  --panel-sunken:   #EEF2F6;        /* inset secondary container */
+  --line:           #CBD5E1;        /* crisp accessible border */
+  --line-strong:    #94A3B8;        /* darker dividing lines */
+  --line-subtle:    #E2E8F0;        /* subtle divider */
+
+  /* ── Text ───────────────────────────────────────────────── */
+  --ink:            #0F172A;        /* deep high-contrast slate */
+  --ink-dim:        #334155;        /* secondary body text */
+  --ink-faint:      #64748B;        /* accessible muted metadata */
+
+  /* ── Primary Government Accent — Official Navy Blue ─────── */
+  --signal:         #0B3B60;        /* National cyber police navy blue */
+  --signal-hover:   #07263F;
+  --signal-muted:   #1D4ED8;
+  --signal-soft:    rgba(11, 59, 96, 0.08);
+  --signal-border:  rgba(11, 59, 96, 0.25);
+
+  /* ── Secondary Accent — Formal Gold / Amber ─────────────── */
+  --violet:         #B45309;        /* Official seal gold/amber */
+  --violet-hover:   #92400E;
+  --violet-soft:    rgba(180, 83, 9, 0.08);
+  --violet-border:  rgba(180, 83, 9, 0.25);
+
+  /* ── Zero Glow / Neon Effects ───────────────────────────── */
+  --glow-cyan:      none !important;
+  --glow-cyan-sm:   none !important;
+  --glow-cyan-lg:   none !important;
+  --glow-violet:    none !important;
+  --glow-violet-sm: none !important;
+  --glow-red:       none !important;
+  --glow-amber:     none !important;
+  --glow-green:     none !important;
+
+  /* ── Risk / Status Spectrum (Government High Contrast) ──── */
+  --risk-critical:     #B91C1C;        /* deep crimson */
+  --risk-critical-bg:  #FEE2E2;
+  --risk-critical-border: #FCA5A5;
+
+  --risk-high:         #DC2626;
+  --risk-high-bg:      #FEE2E2;
+  --risk-high-border:  #F87171;
+
+  --risk-med:          #D97706;        /* dark amber */
+  --risk-med-bg:       #FEF3C7;
+  --risk-med-border:   #FCD34D;
+
+  --risk-low:          #047857;        /* forest green */
+  --risk-low-bg:       #D1FAE5;
+  --risk-low-border:   #6EE7B7;
+
+  --status-info:       #0369A1;
+  --status-info-bg:    #E0F2FE;
+  --status-success:    #047857;
+  --status-success-bg: #D1FAE5;
+  --status-warning:    #D97706;
+  --status-warning-bg: #FEF3C7;
+  --status-error:      #B91C1C;
+  --status-error-bg:   #FEE2E2;
+
+  --urgent-bg:         #FEF2F2;
+  --urgent-border:     #F87171;
+  --urgent-text:       #991B1B;
+
+  /* ── Flat Clean Structure (No Glassmorphism) ────────────── */
+  --glass-bg:          #FFFFFF;
+  --glass-bg-light:    #F8FAFC;
+  --glass-border:      #CBD5E1;
+  --glass-blur:        none !important;
+  --glass-blur-sm:     none !important;
+  --panel-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --panel-shadow-lg:   0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+
+  /* ── Aliases ────────────────────────────────────────────── */
+  --bg:                var(--paper);
+  --bg-subtle:         #F8FAFC;
+  --bg-muted:          #E2E8F0;
+  --border:            var(--line);
+  --border-strong:     var(--line-strong);
+  --text:              var(--ink);
+  --text-dim:          var(--ink-dim);
+  --text-faint:        var(--ink-faint);
+  --accent:            var(--signal);
+  --accent-hover:      var(--signal-hover);
+  --accent-soft:       var(--signal-soft);
+  --accent-border:     var(--signal-border);
+
+  color-scheme: light;
+}
+
+/* Background override for Standard Mode body */
+[data-mode="standard"] body {
+  background-color: #F4F6F9 !important;
+  background-image: none !important;
+  color: #0F172A !important;
+}
+
+/* Standard Mode Card & Container Overrides */
+[data-mode="standard"] .glass-panel,
+[data-mode="standard"] .panel-sunken {
+  background: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #CBD5E1 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+/* Standard Mode Network Graph & Dashboard specific card overrides */
+[data-mode="standard"] main .bg-\[\#0B1222\],
+[data-mode="standard"] main .bg-\[\#0A101D\],
+[data-mode="standard"] main .bg-\[\#050811\],
+[data-mode="standard"] main .bg-\[\#050914\],
+[data-mode="standard"] main .bg-\[\#0B1224\] {
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-mode="standard"] main .bg-\[\#0B1222\] .text-white,
+[data-mode="standard"] main .bg-\[\#070B14\] .text-white,
+[data-mode="standard"] main h1.text-text,
+[data-mode="standard"] main h2.text-white {
+  color: #0F172A !important;
+}
+
+[data-mode="standard"] main .text-slate-400 {
+  color: #475569 !important;
+}
+
+[data-mode="standard"] main .border-slate-800,
+[data-mode="standard"] main .border-slate-800\/80 {
+  border-color: #CBD5E1 !important;
+}
+
+[data-mode="standard"] main .bg-\[\#070B14\] {
+  background-color: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* High Contrast Mode for Accessibility */
+[data-mode="standard"][data-contrast="high"] {
+  --paper: #FFFFFF;
+  --paper-mid: #FFFFFF;
+  --panel: #FFFFFF;
+  --ink: #000000;
+  --ink-dim: #111827;
+  --ink-faint: #1F2937;
+  --line: #000000;
+  --line-strong: #000000;
+  --signal: #002244;
+}
+
+[data-mode="standard"][data-contrast="high"] * {
+  border-color: #000000 !important;
+}

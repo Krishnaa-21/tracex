@@ -51,9 +51,10 @@ def parse_telecom(file_path: Path) -> Tuple[List[Dict[str, Any]], int]:
     tower_cols = _find_column(cols, ["tower_id", "cell_id", "tower", "cell", "location", "site_id"])
 
     normalized_rows = []
+    records = df.to_dict(orient="records")
 
-    for row_idx, (_, row) in enumerate(df.iterrows()):
-        raw_extra = {str(k): (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+    for row_idx, row in enumerate(records):
+        raw_extra = {str(k): (None if pd.isna(v) else v) for k, v in row.items()}
         
         # Extract timestamp
         row_time = None

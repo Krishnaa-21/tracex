@@ -123,6 +123,11 @@ def process_evidence_file(db: Session, evidence_file: EvidenceFile) -> int:
         evidence_file.row_count = row_count
         evidence_file.upload_status = UploadStatus.processed
         db.commit()
+
+        # Invalidate graph cache for this case
+        from app.services.correlation.graph_builder import invalidate_graph_cache
+        invalidate_graph_cache(evidence_file.case_id)
+
         return len(new_entities)
 
     except Exception:

@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from typing import Optional
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Body
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models import Case, Officer
 from app.api.routes.auth import get_current_officer
+from app.core.security import verify_password
 from app.services.reports.pdf_generator import (
     generate_investigative_brief,
     generate_takedown_request,
@@ -13,9 +16,14 @@ from app.services.reports.pdf_generator import (
 router = APIRouter(prefix="/cases", tags=["reports"])
 
 
+class ReportDownloadRequest(BaseModel):
+    password: Optional[str] = None
+
+
 @router.post("/{case_id}/reports/investigative-brief")
 def create_investigative_brief(
     case_id: int,
+    payload: Optional[ReportDownloadRequest] = Body(None),
     db: Session = Depends(get_db),
     current_officer: Officer = Depends(get_current_officer),
 ):
@@ -23,7 +31,16 @@ def create_investigative_brief(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    pdf_bytes, file_path, sha256_hash = generate_investigative_brief(case_id, db)
+    enc_password = None
+    if payload and payload.password:
+        if not verify_password(payload.password, current_officer.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid officer credentials. Please enter your valid account password to unlock report encryption.",
+            )
+        enc_password = payload.password
+
+    pdf_bytes, file_path, sha256_hash = generate_investigative_brief(case_id, db, password=enc_password)
     clean_num = case.case_number.replace("#", "").strip()
     filename = f"investigative_brief_{clean_num}.pdf"
 
@@ -41,6 +58,7 @@ def create_investigative_brief(
 @router.post("/{case_id}/reports/takedown-request")
 def create_takedown_request(
     case_id: int,
+    payload: Optional[ReportDownloadRequest] = Body(None),
     db: Session = Depends(get_db),
     current_officer: Officer = Depends(get_current_officer),
 ):
@@ -48,7 +66,16 @@ def create_takedown_request(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    pdf_bytes, file_path, sha256_hash, matches = generate_takedown_request(case_id, db)
+    enc_password = None
+    if payload and payload.password:
+        if not verify_password(payload.password, current_officer.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid officer credentials. Please enter your valid account password to unlock report encryption.",
+            )
+        enc_password = payload.password
+
+    pdf_bytes, file_path, sha256_hash, matches = generate_takedown_request(case_id, db, password=enc_password)
     clean_num = case.case_number.replace("#", "").strip()
     filename = f"takedown_request_{clean_num}.pdf"
 

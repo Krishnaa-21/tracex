@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   ArrowLeft,
   RefreshCw,
@@ -19,11 +19,12 @@ const SCAM_TYPE_LABELS = {
 export default function ConnectionsGraph() {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [allCases, setAllCases] = useState([]);
   const [caseData, setCaseData] = useState(null);
-  const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
-  const [recordsStats, setRecordsStats] = useState({
+  const [graphData, setGraphData] = useState(() => location.state?.preloadedGraph || { nodes: [], edges: [] });
+  const [recordsStats, setRecordsStats] = useState(() => location.state?.recordsByCategory || {
     telecom: 0,
     bank_upi: 0,
     other: 0,
@@ -32,12 +33,14 @@ export default function ConnectionsGraph() {
   const [topRiskEntities, setTopRiskEntities] = useState([]);
   const [summaryData, setSummaryData] = useState(null);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !(location.state?.preloadedGraph?.nodes?.length > 0));
   const [isRegeneratingSummary, setIsRegeneratingSummary] = useState(false);
   const [error, setError] = useState(null);
 
   const loadCaseAndGraph = async () => {
-    setIsLoading(true);
+    if (!graphData.nodes || graphData.nodes.length === 0) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const caseRes = await apiClient.get(`cases/${caseId}`);

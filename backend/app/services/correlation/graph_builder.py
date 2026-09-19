@@ -4,10 +4,24 @@ from sqlalchemy.orm import Session
 from app.db.models import Entity, EntityLink
 
 
-def build_case_graph(case_id: int, db: Session) -> Dict[str, Any]:
+_GRAPH_CACHE: Dict[int, Dict[str, Any]] = {}
+
+
+def invalidate_graph_cache(case_id: int = None) -> None:
+    """Clear cached graph for a case or all cases."""
+    if case_id is None:
+        _GRAPH_CACHE.clear()
+    else:
+        _GRAPH_CACHE.pop(case_id, None)
+
+
+def build_case_graph(case_id: int, db: Session, use_cache: bool = True) -> Dict[str, Any]:
     """Build a node-link graph for a case from its Entity and EntityLink records.
     Returns: { "nodes": [...], "edges": [...] }
     """
+    if use_cache and case_id in _GRAPH_CACHE:
+        return _GRAPH_CACHE[case_id]
+
     links: List[EntityLink] = (
         db.query(EntityLink)
         .filter(EntityLink.case_id == case_id)
@@ -72,7 +86,9 @@ def build_case_graph(case_id: int, db: Session) -> Dict[str, Any]:
             "extra": link.extra or {},
         })
 
-    return {
+    result = {
         "nodes": nodes,
         "edges": edges,
     }
+    _GRAPH_CACHE[case_id] = result
+    return result

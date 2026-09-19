@@ -20,6 +20,7 @@ from app.api.routes.evidence import router as evidence_router
 from app.api.routes.correlation import router as correlation_router
 from app.api.routes.geo import router as geo_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.chat import router as chat_router
 
 
 @asynccontextmanager
@@ -70,6 +71,7 @@ app.include_router(evidence_router, prefix="/api")
 app.include_router(correlation_router, prefix="/api")
 app.include_router(geo_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
 
 
 @app.get("/")

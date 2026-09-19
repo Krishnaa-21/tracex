@@ -262,10 +262,11 @@ def correlate_case(case_id: int, db: Session) -> List[EntityLink]:
         )
 
     if other_entities:
-        # Cache other cases for quick lookup
+        # Cache only matched other cases for quick lookup
+        matched_case_ids = {oe.case_id for oe in other_entities}
         other_cases: Dict[int, Case] = {
             c.id: c
-            for c in db.query(Case).filter(Case.id != case_id).all()
+            for c in db.query(Case).filter(Case.id.in_(list(matched_case_ids))).all()
         }
 
         # Index other entities by (entity_type, value)
@@ -296,6 +297,10 @@ def correlate_case(case_id: int, db: Session) -> List[EntityLink]:
     # Automatically score the case and update risk metrics & why_flagged
     from app.services.risk.scoring import score_case
     score_case(case_id, db)
+
+    # Invalidate stale cached graph for this case
+    from app.services.correlation.graph_builder import invalidate_graph_cache
+    invalidate_graph_cache(case_id)
 
     all_case_links = db.query(EntityLink).filter(EntityLink.case_id == case_id).all()
     return all_case_links

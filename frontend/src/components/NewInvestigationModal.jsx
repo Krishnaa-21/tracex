@@ -47,6 +47,8 @@ export default function NewInvestigationModal({ isOpen, onClose, onCaseCreated }
   const [isCreatingCase, setIsCreatingCase] = useState(false);
   const [uploadingCategory, setUploadingCategory] = useState(null);
   const [isCorrelating, setIsCorrelating] = useState(false);
+  const [progressStep, setProgressStep] = useState(0); // 1: extract, 2: correlate, 3: render
+  const [progressPercent, setProgressPercent] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [error, setError] = useState(null);
 
@@ -127,16 +129,36 @@ export default function NewInvestigationModal({ isOpen, onClose, onCaseCreated }
     }
 
     setIsCorrelating(true);
+    setProgressStep(1);
+    setProgressPercent(20);
     setError(null);
 
     try {
-      // Trigger correlation engine
-      await apiClient.post(`cases/${caseData.id}/correlate`);
+      // Step 1: Extracting entities
+      await new Promise((r) => setTimeout(r, 180));
+      setProgressStep(2);
+      setProgressPercent(60);
+
+      // Step 2: Trigger correlation engine & relationship building
+      const res = await apiClient.post(`cases/${caseData.id}/correlate`);
+
+      // Step 3: Rendering graph
+      setProgressStep(3);
+      setProgressPercent(100);
+      await new Promise((r) => setTimeout(r, 220));
+
       onClose();
-      navigate(`/cases/${caseData.id}/graph`);
+      navigate(`/cases/${caseData.id}/graph`, {
+        state: {
+          preloadedGraph: res?.graph,
+          recordsByCategory: res?.records_by_category,
+        },
+      });
     } catch (err) {
       setError(err.message || "Correlation failed. Please check evidence files.");
       setIsCorrelating(false);
+      setProgressStep(0);
+      setProgressPercent(0);
     }
   };
 
@@ -371,6 +393,54 @@ export default function NewInvestigationModal({ isOpen, onClose, onCaseCreated }
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Progressive Pipeline Indicator */}
+          {isCorrelating && (
+            <div
+              className="p-4 rounded-lg space-y-3 animate-fade-in-up"
+              style={{
+                background: "rgba(0,212,255,0.06)",
+                border: "1px solid rgba(0,212,255,0.30)",
+                boxShadow: "0 0 20px rgba(0,212,255,0.12)",
+              }}
+            >
+              <div className="flex items-center justify-between text-[11.5px] font-mono">
+                <span className="flex items-center gap-2 font-bold" style={{ color: "#00D4FF" }}>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Processing Forensic Correlation Pipeline</span>
+                </span>
+                <span className="font-bold text-accent">{progressPercent}%</span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.40)" }}>
+                <div
+                  className="h-full transition-all duration-300 rounded-full"
+                  style={{
+                    width: `${progressPercent}%`,
+                    background: "linear-gradient(90deg, #00D4FF, #8B5CF6)",
+                    boxShadow: "0 0 10px rgba(0,212,255,0.8)",
+                  }}
+                />
+              </div>
+
+              {/* Steps */}
+              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-medium">
+                <div className={`flex items-center gap-1.5 ${progressStep >= 1 ? "text-emerald-400 font-semibold" : "text-textDim"}`}>
+                  {progressStep > 1 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> : <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 flex-shrink-0" />}
+                  <span className="truncate">1. Extracting entities</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${progressStep >= 2 ? (progressStep > 2 ? "text-emerald-400 font-semibold" : "text-cyan-400 font-semibold") : "text-textDim"}`}>
+                  {progressStep > 2 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> : progressStep === 2 ? <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 flex-shrink-0" /> : <div className="w-3 h-3 rounded-full border border-textDim/40 flex-shrink-0" />}
+                  <span className="truncate">2. Building connections</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${progressStep >= 3 ? "text-emerald-400 font-semibold" : "text-textDim"}`}>
+                  {progressStep >= 3 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> : <div className="w-3 h-3 rounded-full border border-textDim/40 flex-shrink-0" />}
+                  <span className="truncate">3. Rendering graph</span>
+                </div>
               </div>
             </div>
           )}

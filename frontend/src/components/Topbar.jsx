@@ -14,8 +14,10 @@ import { getOfficer, clearAuth, apiClient } from "../api/client";
 import Logo from "./Logo";
 import NotificationsPopover from "./NotificationsPopover";
 import ProfilePanel from "./ProfileModal";
+import { useMode } from "../context/ModeContext";
 
 export default function Topbar({ onOpenNewInvestigation }) {
+  const { mode, setMode } = useMode();
   const location = useLocation();
   const navigate = useNavigate();
   const { caseId } = useParams();
@@ -254,6 +256,41 @@ export default function Topbar({ onOpenNewInvestigation }) {
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">New investigation</span>
           </button>
+
+          {/* Mode Toggle Switch: Analysis Mode vs Standard Mode */}
+          <div
+            id="topbar-mode-toggle"
+            className="flex items-center p-0.5 rounded-full border text-[10.5px] font-mono transition-all flex-shrink-0"
+            style={{
+              background: "rgba(0,0,0,0.50)",
+              borderColor: "rgba(0,212,255,0.25)",
+              boxShadow: "0 0 10px rgba(0,212,255,0.10)",
+            }}
+            title="Switch UI Skin: Analysis Mode vs Standard Mode"
+          >
+            <button
+              type="button"
+              onClick={() => setMode("analysis")}
+              className={`px-2 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
+                mode === "analysis"
+                  ? "bg-[#00D4FF] text-[#05070D] shadow-[0_0_10px_rgba(0,212,255,0.8)]"
+                  : "text-textDim hover:text-text"
+              }`}
+            >
+              ⚡ Analysis
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("standard")}
+              className={`px-2 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
+                mode === "standard"
+                  ? "bg-white text-[#0B3B60]"
+                  : "text-textDim hover:text-text"
+              }`}
+            >
+              🏛️ Standard
+            </button>
+          </div>
 
           {/* Notifications */}
           <div className="relative">

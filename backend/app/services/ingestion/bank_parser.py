@@ -50,9 +50,10 @@ def parse_bank_upi(file_path: Path) -> Tuple[List[Dict[str, Any]], int]:
     time_cols = _find_column(cols, ["transaction_time", "txn_time", "timestamp", "date", "txn_date", "transaction_date", "time"])
 
     normalized_rows = []
+    records = df.to_dict(orient="records")
 
-    for row_idx, (_, row) in enumerate(df.iterrows()):
-        raw_extra = {str(k): (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+    for row_idx, row in enumerate(records):
+        raw_extra = {str(k): (None if pd.isna(v) else v) for k, v in row.items()}
 
         row_time = None
         for tc in time_cols:
