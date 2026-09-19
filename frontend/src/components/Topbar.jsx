@@ -3,9 +3,6 @@ import { useLocation, useNavigate, useParams, NavLink } from "react-router-dom";
 import {
   Search,
   Bell,
-  User,
-  Settings,
-  LogOut,
   Plus,
   Network,
   FileText,
@@ -16,16 +13,15 @@ import {
 import { getOfficer, clearAuth, apiClient } from "../api/client";
 import Logo from "./Logo";
 import NotificationsPopover from "./NotificationsPopover";
-import ProfileModal from "./ProfileModal";
+import ProfilePanel from "./ProfileModal";
 
 export default function Topbar({ onOpenNewInvestigation }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { caseId } = useParams();
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profilePanelOpen, setProfilePanelOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +30,6 @@ export default function Topbar({ onOpenNewInvestigation }) {
   const [allCasesCache, setAllCasesCache] = useState(null);
 
   const dropdownRef = useRef(null);
-  const dropdownPanelRef = useRef(null);
   const notifButtonRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -85,12 +80,9 @@ export default function Topbar({ onOpenNewInvestigation }) {
     return () => { cancelled = true; };
   }, [searchQuery]);
 
-  // Click outside — checks both the trigger button and the dropdown panel
+  // Click outside — only handles search box now (profile panel handles its own click-outside)
   useEffect(() => {
     function handleClickOutside(e) {
-      const clickedInsideButton = dropdownRef.current && dropdownRef.current.contains(e.target);
-      const clickedInsidePanel = dropdownPanelRef.current && dropdownPanelRef.current.contains(e.target);
-      if (!clickedInsideButton && !clickedInsidePanel) setDropdownOpen(false);
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -306,17 +298,29 @@ export default function Topbar({ onOpenNewInvestigation }) {
             />
           </div>
 
-          {/* Officer profile */}
+          {/* Officer profile avatar button — directly opens ProfilePanel */}
           <div className="relative" ref={dropdownRef}>
             <button
               id="topbar-profile"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={() => setProfilePanelOpen(!profilePanelOpen)}
               className="flex items-center gap-2 pl-1 pr-2 py-1 rounded transition-all cursor-pointer"
-              style={{ background: dropdownOpen ? "rgba(0,212,255,0.06)" : "transparent" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
-              onMouseLeave={(e) => {
-                if (!dropdownOpen) e.currentTarget.style.background = "transparent";
+              style={{
+                background: profilePanelOpen ? "rgba(0,229,200,0.08)" : "transparent",
+                border: profilePanelOpen ? "1px solid rgba(0,229,200,0.25)" : "1px solid transparent",
               }}
+              onMouseEnter={(e) => {
+                if (!profilePanelOpen) {
+                  e.currentTarget.style.background = "rgba(0,229,200,0.06)";
+                  e.currentTarget.style.border = "1px solid rgba(0,229,200,0.18)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!profilePanelOpen) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.border = "1px solid transparent";
+                }
+              }}
+              title="Officer profile"
             >
               {/* Avatar with gradient ring */}
               <div
@@ -324,108 +328,27 @@ export default function Topbar({ onOpenNewInvestigation }) {
                 style={{
                   background: "linear-gradient(135deg, #0099CC, #6B21D8)",
                   color: "#fff",
-                  boxShadow: "0 0 10px rgba(0,212,255,0.30)",
+                  boxShadow: profilePanelOpen
+                    ? "0 0 14px rgba(0,229,200,0.50)"
+                    : "0 0 10px rgba(0,212,255,0.30)",
                 }}
               >
                 {initials}
               </div>
               <div className="hidden md:flex flex-col text-left">
                 <span className="text-[12px] font-semibold text-text leading-tight">{officer.name || "Officer"}</span>
-                <span className="text-[10px] font-mono leading-none" style={{ color: "rgba(0,212,255,0.60)" }}>
+                <span className="text-[10px] font-mono leading-none" style={{ color: "rgba(0,229,200,0.60)" }}>
                   {officer.badge_id || "IO"}
                 </span>
               </div>
               <ChevronDown
                 className="w-3 h-3 hidden md:block transition-transform"
                 style={{
-                  color: "rgba(0,212,255,0.40)",
-                  transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  color: "rgba(0,229,200,0.45)",
+                  transform: profilePanelOpen ? "rotate(180deg)" : "rotate(0deg)",
                 }}
               />
             </button>
-
-            {/* Profile Dropdown — fixed position, viewport-safe, with panelRef for click-outside */}
-            {dropdownOpen && (
-              <div
-                ref={dropdownPanelRef}
-                className="fixed w-60 z-[200] text-[12.5px] select-none animate-fade-in-up"
-                style={{
-                  top: "60px",
-                  right: "12px",
-                  maxHeight: "calc(100vh - 72px)",
-                  overflowY: "auto",
-                  background: "rgba(4,9,20,0.98)",
-                  backdropFilter: "blur(24px)",
-                  WebkitBackdropFilter: "blur(24px)",
-                  border: "1px solid rgba(0,229,200,0.20)",
-                  borderRadius: "10px",
-                  boxShadow: "0 16px 56px rgba(0,0,0,0.85), 0 0 0 0.5px rgba(0,229,200,0.08), 0 0 28px rgba(0,229,200,0.08)",
-                }}
-              >
-                {/* User info header */}
-                <div
-                  className="px-4 py-3 mb-1"
-                  style={{ borderBottom: "1px solid rgba(0,229,200,0.10)", background: "rgba(0,229,200,0.03)" }}
-                >
-                  <p className="font-semibold text-[13px] text-text">{officer.name}</p>
-                  <p className="text-[11px] font-mono font-medium mt-0.5" style={{ color: "#00E5C8" }}>{officer.badge_id}</p>
-                  <p className="text-[11px] mt-0.5 text-textDim">{officer.station_name}</p>
-                </div>
-
-                {[
-                  {
-                    icon: User,
-                    label: "My profile & credentials",
-                    onClick: () => { setDropdownOpen(false); setProfileModalOpen(true); },
-                    color: "rgba(0,229,200,0.75)",
-                  },
-                  {
-                    icon: Settings,
-                    label: "Preferences",
-                    onClick: () => { setDropdownOpen(false); alert("Preferences: Sound alerts enabled • High-contrast map tiles enabled • Section 65B verification stamp active"); },
-                    color: "rgba(148,163,184,0.60)",
-                  },
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={item.onClick}
-                    className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors cursor-pointer text-textDim"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(0,229,200,0.06)";
-                      e.currentTarget.style.color = "#E2E8F0";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = "";
-                    }}
-                  >
-                    <item.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: item.color }} />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-
-                <div style={{ borderTop: "1px solid rgba(0,229,200,0.08)", margin: "4px 0" }} />
-
-                <button
-                  onClick={handleSignOut}
-                  className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors cursor-pointer"
-                  style={{ color: "#FF8BA0" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,59,92,0.08)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <LogOut className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#FF3B5C" }} />
-                  <span>Sign out</span>
-                </button>
-
-                {/* Session footer */}
-                <div
-                  className="px-4 py-2 text-[10px] font-mono"
-                  style={{ borderTop: "1px solid rgba(0,229,200,0.08)", color: "rgba(0,229,200,0.35)" }}
-                >
-                  Session authenticated via JWT
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -481,8 +404,8 @@ export default function Topbar({ onOpenNewInvestigation }) {
         })}
       </nav>
 
-      {/* Officer Profile Modal */}
-      <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
+      {/* Profile Panel — anchored right-side popover, not a full-screen modal */}
+      <ProfilePanel isOpen={profilePanelOpen} onClose={() => setProfilePanelOpen(false)} />
     </header>
   );
 }

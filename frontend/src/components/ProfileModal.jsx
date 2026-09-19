@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   X,
   BadgeCheck,
@@ -6,28 +6,22 @@ import {
   Clock,
   LogOut,
   Shield,
+  User,
+  Settings,
+  ChevronRight,
 } from "lucide-react";
 import { getOfficer, getToken, clearAuth } from "../api/client";
 import { useNavigate } from "react-router-dom";
 
-/** Glassmorphic field row */
-function FieldRow({ label, children }) {
-  return (
-    <div
-      className="flex items-center justify-between py-2.5"
-      style={{ borderBottom: "1px solid rgba(0,212,255,0.07)" }}
-    >
-      <span className="text-[10px] font-mono font-semibold uppercase tracking-widest" style={{ color: "rgba(0,212,255,0.45)" }}>
-        {label}
-      </span>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-export default function ProfileModal({ isOpen, onClose }) {
+/**
+ * ProfilePanel — anchored right-side popover (NOT a full-screen modal).
+ *
+ * Rendered via a React portal directly in Topbar, positioned fixed at
+ * top-right below the header. Dismisses on: click-outside, Escape key, X button.
+ */
+export default function ProfilePanel({ isOpen, onClose }) {
   const navigate = useNavigate();
-  if (!isOpen) return null;
+  const panelRef = useRef(null);
 
   const officer = getOfficer() || {
     name: "A. Sharma",
@@ -37,10 +31,18 @@ export default function ProfileModal({ isOpen, onClose }) {
 
   const token = getToken() || "";
   const tokenSnippet = token
-    ? `${token.substring(0, 12)}...${token.substring(token.length - 8)}`
-    : "None";
+    ? `${token.substring(0, 14)}...${token.substring(token.length - 8)}`
+    : "No active token";
 
   const initials = officer.name ? officer.name.charAt(0).toUpperCase() : "O";
+
+  // Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
   const handleSignOut = () => {
     clearAuth();
@@ -48,184 +50,241 @@ export default function ProfileModal({ isOpen, onClose }) {
     navigate("/login");
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-      onClick={onClose}
-    >
+    <>
+      {/* Invisible backdrop — click to dismiss, no visual block */}
       <div
-        className="w-full max-w-md rounded-lg overflow-hidden select-none animate-fade-in-up"
+        className="fixed inset-0 z-[190]"
+        onClick={onClose}
+        aria-label="Close profile panel"
+      />
+
+      {/* Anchored panel */}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Officer profile"
+        className="fixed z-[200] select-none animate-fade-in-up"
         style={{
-          background: "rgba(5,9,20,0.95)",
+          top: "60px",
+          right: "12px",
+          width: "300px",
+          maxHeight: "calc(100vh - 76px)",
+          overflowY: "auto",
+          background: "rgba(4,9,20,0.97)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(0,212,255,0.20)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.80), 0 0 40px rgba(0,212,255,0.08)",
+          border: "1px solid rgba(0,229,200,0.18)",
+          borderRadius: "10px",
+          boxShadow:
+            "0 20px 60px rgba(0,0,0,0.85), 0 0 0 0.5px rgba(0,229,200,0.06), 0 0 32px rgba(0,229,200,0.06)",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
-          className="px-5 py-4 flex items-center justify-between"
+          className="px-4 py-3 flex items-center justify-between"
           style={{
-            borderBottom: "1px solid rgba(0,212,255,0.12)",
-            background: "rgba(0,212,255,0.04)",
+            borderBottom: "1px solid rgba(0,229,200,0.10)",
+            background: "rgba(0,229,200,0.03)",
           }}
         >
-          <div className="flex items-center gap-3">
-            {/* Large avatar with gradient ring */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Avatar */}
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-[16px] font-bold font-display flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-bold font-display flex-shrink-0"
               style={{
                 background: "linear-gradient(135deg, #007FA8, #6B21D8)",
                 color: "#fff",
-                boxShadow: "0 0 16px rgba(0,212,255,0.35)",
+                boxShadow: "0 0 14px rgba(0,229,200,0.30)",
               }}
             >
               {initials}
             </div>
-            <div>
-              <h2 className="text-[14px] font-bold text-text leading-tight font-display">
-                Officer Security Profile
-              </h2>
-              <p className="text-[11px] text-textDim leading-tight font-mono">
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-text leading-tight truncate">
+                {officer.name}
+              </p>
+              <p
+                className="text-[10px] font-mono leading-tight"
+                style={{ color: "rgba(0,229,200,0.55)" }}
+              >
                 NCRP · Node MP-01
               </p>
             </div>
           </div>
+
+          {/* Close X */}
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded flex items-center justify-center transition-all cursor-pointer"
-            style={{ color: "rgba(0,212,255,0.50)" }}
+            className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 transition-all cursor-pointer"
+            style={{ color: "rgba(0,229,200,0.45)" }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(0,212,255,0.08)";
-              e.currentTarget.style.color = "#00D4FF";
+              e.currentTarget.style.background = "rgba(0,229,200,0.08)";
+              e.currentTarget.style.color = "#00E5C8";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "rgba(0,212,255,0.50)";
+              e.currentTarget.style.color = "rgba(0,229,200,0.45)";
             }}
+            title="Close (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-4 text-[12.5px]">
-          {/* Identity block */}
-          <div
-            className="rounded-md p-4"
-            style={{
-              background: "rgba(0,212,255,0.04)",
-              border: "1px solid rgba(0,212,255,0.10)",
-            }}
+        {/* ── Identity section ───────────────────────────────────────────── */}
+        <div className="px-4 py-3 space-y-0">
+          <p
+            className="text-[9.5px] font-mono font-bold uppercase tracking-widest mb-2"
+            style={{ color: "rgba(0,229,200,0.38)" }}
           >
-            <div className="text-[10px] font-mono font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(0,212,255,0.40)" }}>
-              Identity & Authorization
-            </div>
+            Identity &amp; Authorization
+          </p>
 
-            <FieldRow label="Full Name">
-              <span className="font-semibold text-text text-[12.5px]">{officer.name || "A. Sharma"}</span>
-            </FieldRow>
-
-            <FieldRow label="Badge / Service ID">
+          {[
+            { label: "Full Name", value: officer.name || "A. Sharma", mono: false },
+            { label: "Badge / Service ID", value: officer.badge_id || "MP-IO-4471", mono: true, highlight: true },
+            { label: "Station & Jurisdiction", value: officer.station_name || "Bhopal Cyber Cell", mono: false },
+          ].map(({ label, value, mono, highlight }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between py-2"
+              style={{ borderBottom: "1px solid rgba(0,229,200,0.06)" }}
+            >
               <span
-                className="font-mono font-bold text-[12px] px-2 py-0.5 rounded"
-                style={{
-                  color: "#00D4FF",
-                  background: "rgba(0,212,255,0.08)",
-                  border: "1px solid rgba(0,212,255,0.25)",
-                  boxShadow: "0 0 8px rgba(0,212,255,0.20)",
-                }}
+                className="text-[10px] font-mono font-semibold uppercase tracking-wider flex-shrink-0"
+                style={{ color: "rgba(0,229,200,0.40)" }}
               >
-                {officer.badge_id || "MP-IO-4471"}
+                {label}
               </span>
-            </FieldRow>
-
-            <FieldRow label="Station & Jurisdiction">
-              <span className="font-medium text-text text-[12.5px]">{officer.station_name || "Bhopal Cyber Cell"}</span>
-            </FieldRow>
-
-            <div className="flex items-center justify-between pt-2.5">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-widest" style={{ color: "rgba(0,212,255,0.45)" }}>
-                Security Clearance
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2 py-0.5 rounded"
-                style={{
-                  color: "#10B981",
-                  background: "rgba(16,185,129,0.10)",
-                  border: "1px solid rgba(16,185,129,0.25)",
-                  boxShadow: "0 0 8px rgba(16,185,129,0.25)",
-                }}
-              >
-                <BadgeCheck className="w-3.5 h-3.5" />
-                <span>Level-3 Cyber Ops</span>
-              </span>
+              {highlight ? (
+                <span
+                  className="font-mono font-bold text-[11px] px-2 py-0.5 rounded"
+                  style={{
+                    color: "#00E5C8",
+                    background: "rgba(0,229,200,0.08)",
+                    border: "1px solid rgba(0,229,200,0.22)",
+                    boxShadow: "0 0 8px rgba(0,229,200,0.16)",
+                  }}
+                >
+                  {value}
+                </span>
+              ) : (
+                <span
+                  className={`text-[12px] font-medium text-text ${mono ? "font-mono" : ""} text-right`}
+                  style={{ maxWidth: "160px" }}
+                >
+                  {value}
+                </span>
+              )}
             </div>
+          ))}
+
+          {/* Security clearance */}
+          <div className="flex items-center justify-between py-2">
+            <span
+              className="text-[10px] font-mono font-semibold uppercase tracking-wider"
+              style={{ color: "rgba(0,229,200,0.40)" }}
+            >
+              Security Clearance
+            </span>
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2 py-0.5 rounded"
+              style={{
+                color: "#10B981",
+                background: "rgba(16,185,129,0.08)",
+                border: "1px solid rgba(16,185,129,0.22)",
+                boxShadow: "0 0 8px rgba(16,185,129,0.18)",
+              }}
+            >
+              <BadgeCheck className="w-3.5 h-3.5" />
+              Level-3 Cyber Ops
+            </span>
+          </div>
+        </div>
+
+        {/* ── Session section ─────────────────────────────────────────────── */}
+        <div
+          className="mx-3 mb-3 rounded-lg p-3 space-y-2"
+          style={{
+            background: "rgba(0,0,0,0.22)",
+            border: "1px solid rgba(0,229,200,0.08)",
+          }}
+        >
+          {/* Bearer token */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-[11.5px] text-text font-medium flex-shrink-0">
+              <Key className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#00E5C8" }} />
+              Bearer Token
+            </span>
+            <span
+              className="font-mono text-[10px] text-textDim truncate"
+              style={{ maxWidth: "130px" }}
+              title={token}
+            >
+              {tokenSnippet}
+            </span>
           </div>
 
           {/* Session integrity */}
-          <div
-            className="rounded-md p-3.5 space-y-2"
-            style={{
-              border: "1px solid rgba(0,212,255,0.10)",
-              background: "rgba(0,0,0,0.20)",
-            }}
-          >
-            <div className="flex items-center justify-between text-[11.5px]">
-              <span className="flex items-center gap-1.5 text-text font-medium">
-                <Key className="w-3.5 h-3.5" style={{ color: "#00D4FF" }} />
-                Active Bearer Token
-              </span>
-              <span className="font-mono text-[10.5px] text-textDim">{tokenSnippet}</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1 text-textDim">
-                <Clock className="w-3 h-3 text-textFaint" />
-                Session Integrity
-              </span>
-              <span className="font-mono font-medium" style={{ color: "#10B981", textShadow: "0 0 8px rgba(16,185,129,0.40)" }}>
-                ✓ Verified &amp; Active
-              </span>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[11px] text-textDim">
+              <Clock className="w-3 h-3 text-textFaint flex-shrink-0" />
+              Session Integrity
+            </span>
+            <span
+              className="font-mono font-semibold text-[11px]"
+              style={{ color: "#10B981", textShadow: "0 0 8px rgba(16,185,129,0.35)" }}
+            >
+              ✓ Verified &amp; Active
+            </span>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* ── Footer actions ──────────────────────────────────────────────── */}
         <div
-          className="px-5 py-3 flex items-center justify-between"
-          style={{
-            borderTop: "1px solid rgba(0,212,255,0.10)",
-            background: "rgba(0,0,0,0.20)",
-          }}
+          className="px-3 pb-3 flex flex-col gap-1.5"
+          style={{ borderTop: "1px solid rgba(0,229,200,0.08)", paddingTop: "10px" }}
         >
-          <span className="text-[11px] font-mono" style={{ color: "rgba(0,212,255,0.30)" }}>
-            Session authenticated via JWT
-          </span>
+          <button
+            onClick={() => {
+              onClose();
+              alert("Preferences: Sound alerts enabled • High-contrast map tiles • Section 65B stamp active");
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] text-textDim transition-all cursor-pointer"
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,229,200,0.06)"; e.currentTarget.style.color = "#E2E8F0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = ""; }}
+          >
+            <Settings className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(148,163,184,0.60)" }} />
+            <span>Preferences</span>
+          </button>
+
           <button
             onClick={handleSignOut}
-            className="px-3 py-1.5 text-[12px] font-medium rounded flex items-center gap-1.5 transition-all cursor-pointer"
-            style={{
-              background: "rgba(255,59,92,0.08)",
-              border: "1px solid rgba(255,59,92,0.25)",
-              color: "#FF8BA0",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,59,92,0.15)";
-              e.currentTarget.style.boxShadow = "0 0 12px rgba(255,59,92,0.25)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,59,92,0.08)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] transition-all cursor-pointer"
+            style={{ color: "#FF8BA0" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,59,92,0.08)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            <LogOut className="w-3.5 h-3.5" style={{ color: "#FF3B5C" }} />
+            <LogOut className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#FF3B5C" }} />
             <span>Sign out</span>
           </button>
         </div>
+
+        {/* ── Session footnote ────────────────────────────────────────────── */}
+        <div
+          className="px-4 py-2 text-[10px] font-mono text-center"
+          style={{
+            borderTop: "1px solid rgba(0,229,200,0.07)",
+            color: "rgba(0,229,200,0.28)",
+          }}
+        >
+          Session authenticated via JWT
+        </div>
       </div>
-    </div>
+    </>
   );
 }
