@@ -125,8 +125,8 @@ export default function Reports() {
     }
   };
 
-  const riskScore = previewData?.case_overview?.risk_score || caseData?.risk_score || 85;
-  const isHighRisk = (previewData?.case_overview?.risk_level || caseData?.risk_level) === "HIGH" || riskScore >= 75;
+  const riskScore = caseData?.risk_score || 85;
+  const isHighRisk = caseData?.risk_level === "HIGH" || riskScore >= 75;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20">
@@ -207,9 +207,8 @@ export default function Reports() {
         </div>
       )}
 
-      {/* 3. Tab Content: Package Cards */}
-      {activeTab === "packages" && (
-        <div className="space-y-6">
+      {/* 3. Download Package Cards */}
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Card 1: Investigative Brief */}
             <div className="flex flex-col justify-between bg-bg border border-border rounded-xl p-5 shadow-sm space-y-4">
@@ -322,7 +321,6 @@ export default function Reports() {
             </div>
           </div>
         </div>
-      )}
 
     </div>
   );
