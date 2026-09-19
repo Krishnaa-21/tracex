@@ -233,14 +233,14 @@ export default function ChatWidget() {
       {/* ── Expandable Chat Panel ── */}
       {isOpen && (
         <div
-          className={`w-[360px] sm:w-[410px] h-[520px] rounded-xl flex flex-col mb-3 animate-fade-in-up overflow-hidden shadow-2xl ${
+          className={`w-[360px] sm:w-[410px] h-[520px] flex flex-col mb-3 overflow-hidden shadow-2xl ${
             isStandardMode
-              ? "bg-white border border-[#CBD5E1]"
-              : "bg-[#050914]/95 border border-[#00D4FF]/30 backdrop-blur-xl"
+              ? "rounded-sm bg-white border border-[#5F6B7A]"
+              : "rounded-xl animate-fade-in-up bg-[#050914]/95 border border-[#00D4FF]/30 backdrop-blur-xl"
           }`}
           style={{
             boxShadow: isStandardMode
-              ? "0 10px 30px rgba(0, 58, 140, 0.15), 0 2px 6px rgba(0,0,0,0.08)"
+              ? "0 2px 8px rgba(0, 0, 0, 0.25)"
               : "0 12px 48px rgba(0,0,0,0.85), 0 0 30px rgba(0,212,255,0.15)",
           }}
         >
@@ -255,7 +255,7 @@ export default function ChatWidget() {
             <div className="flex items-center gap-2.5">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                  isStandardMode ? "bg-[#B45309] text-white" : "bg-cyan-400/20 text-[#00D4FF]"
+                  isStandardMode ? "bg-white text-[#0B3B60]" : "bg-cyan-400/20 text-[#00D4FF]"
                 }`}
               >
                 <Bot className="w-4 h-4" />
@@ -475,12 +475,12 @@ export default function ChatWidget() {
         onClick={() => setIsOpen(!isOpen)}
         className={`group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full font-bold text-xs transition-all shadow-xl cursor-pointer ${
           isStandardMode
-            ? "bg-[#0B3B60] hover:bg-[#07263F] text-white border-2 border-[#B45309]"
+            ? "bg-[#0B3B60] hover:bg-[#082C48] text-white border border-[#082C48]"
             : "bg-gradient-to-r from-[#007FA8] to-[#6B21D8] text-white border border-[#00D4FF]/40 hover:shadow-[0_0_24px_rgba(0,212,255,0.5)]"
         }`}
         style={{
           boxShadow: isStandardMode
-            ? "0 4px 14px rgba(11, 59, 96, 0.4)"
+            ? "0 1px 4px rgba(0, 0, 0, 0.35)"
             : "0 0 20px rgba(0,212,255,0.35)",
         }}
       >
