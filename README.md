@@ -35,6 +35,22 @@ A unified evidence ingestion, entity correlation, and investigative reporting co
    uvicorn app.main:app --reload
    ```
 
+#### AI Assistant (optional LLM)
+
+The bottom-right chat assistant works out of the box: it answers case-specific and cross-case
+questions directly from the case database. To let an LLM phrase the answers (using the same
+grounded case data), set these in `backend/.env`:
+
+```
+AI_SUMMARY_API_KEY=<your key>          # placeholder "your_key_here" keeps LLM off
+AI_SUMMARY_API_URL=https://api.openai.com/v1/chat/completions
+AI_SUMMARY_MODEL=gpt-4o-mini
+AI_CHAT_TIMEOUT_SECONDS=15
+```
+
+If the LLM is slow, rate-limited or unreachable, the assistant automatically falls back to the
+data-driven answer (with a short note) instead of failing. The same key also powers case narratives.
+
 ### Frontend Setup
 
 1. Navigate to the frontend directory:

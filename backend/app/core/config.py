@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     AI_SUMMARY_API_KEY: str = "your_key_here"
     AI_SUMMARY_API_URL: str = "https://api.openai.com/v1/chat/completions"
     AI_SUMMARY_MODEL: str = "gpt-4o-mini"
+    # Chat assistant re-uses the AI_SUMMARY_* credentials/endpoint. Timeout (seconds)
+    # for a single LLM call before the assistant falls back to data-driven answers.
+    AI_CHAT_TIMEOUT_SECONDS: float = 15.0
 
     model_config = SettingsConfigDict(
         env_file=str(env_path),

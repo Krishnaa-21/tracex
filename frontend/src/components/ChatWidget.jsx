@@ -18,6 +18,80 @@ import {
 import { useMode } from "../context/ModeContext";
 import { apiClient } from "../api/client";
 
+const REQUEST_TIMEOUT_MS = 30000;
+const MAX_HISTORY_TURNS = 6;
+
+const nowStamp = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** Turn a failed chat request into a message an officer can act on. */
+function describeChatError(err) {
+  if (err?.name === "AbortError") {
+    return "The assistant took too long to respond. Please try again — or ask a narrower question.";
+  }
+  const status = err?.status;
+  if (status === 400 && typeof err.message === "string") return err.message;
+  if (status === 404) return "The assistant service was not found on the server. Please make sure the backend is up to date.";
+  if (status >= 500) return "The intelligence service hit an error. Please try again in a moment.";
+  if (status === undefined) {
+    return "Cannot reach the TraceX server. Check that the backend is running and your connection is working, then try again.";
+  }
+  return "Error retrieving intelligence response. Please try again.";
+}
+
+/** Inline **bold**, *italic* and `code` -> React nodes (no innerHTML, so evidence text can't inject markup). */
+function renderInline(text, keyPrefix) {
+  const nodes = [];
+  const re = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\*[^*\n]+\*)/g;
+  let last = 0;
+  let m;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const tok = m[0];
+    const key = `${keyPrefix}-${i++}`;
+    if (tok.startsWith("**")) {
+      nodes.push(<strong key={key}>{tok.slice(2, -2)}</strong>);
+    } else if (tok.startsWith("`")) {
+      nodes.push(
+        <code key={key} className="px-1 rounded bg-slate-500/15 font-mono text-[11px] break-all">
+          {tok.slice(1, -1)}
+        </code>
+      );
+    } else {
+      nodes.push(<em key={key}>{tok.slice(1, -1)}</em>);
+    }
+    last = m.index + tok.length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
+/** Minimal markdown: paragraphs, "- " bullets, numbered lines, bold/italic/code. */
+function FormattedText({ text }) {
+  const lines = String(text ?? "").split("\n");
+  return (
+    <div>
+      {lines.map((line, idx) => {
+        if (!line.trim()) return <div key={idx} className="h-1.5" />;
+        const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+        if (bullet) {
+          return (
+            <div key={idx} className="flex gap-1.5 pl-1">
+              <span aria-hidden="true">•</span>
+              <span className="min-w-0 break-words">{renderInline(bullet[1], `l${idx}`)}</span>
+            </div>
+          );
+        }
+        return (
+          <div key={idx} className="break-words">
+            {renderInline(line, `l${idx}`)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatWidget() {
   const { mode, isStandardMode } = useMode();
   const location = useLocation();
@@ -41,6 +115,24 @@ export default function ChatWidget() {
   const caseMatch = location.pathname.match(/\/cases\/(\d+)/);
   const activeCaseId = caseMatch ? parseInt(caseMatch[1], 10) : null;
 
+  // The URL carries the database id; officers know cases by their case number (e.g. #4471).
+  const [activeCaseNumber, setActiveCaseNumber] = useState(null);
+  useEffect(() => {
+    setActiveCaseNumber(null);
+    if (!activeCaseId) return undefined;
+    let cancelled = false;
+    apiClient
+      .get(`cases/${activeCaseId}`)
+      .then((c) => {
+        if (!cancelled) setActiveCaseNumber(c?.case_number || null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCaseId]);
+  const caseLabel = activeCaseNumber ? `Case ${activeCaseNumber}` : `Case ID ${activeCaseId}`;
+
   // Auto-scroll to bottom of messages
   useEffect(() => {
     if (isOpen) {
@@ -63,38 +155,48 @@ export default function ChatWidget() {
       id: `user-${Date.now()}`,
       sender: "user",
       text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: nowStamp(),
     };
+
+    // Recent real turns give the assistant context for follow-up questions.
+    const history = messages
+      .filter((m) => !m.isError && m.id !== "welcome" && m.id !== "cleared")
+      .slice(-MAX_HISTORY_TURNS)
+      .map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text }));
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
 
-    try {
-      const payload = {
-        message: query,
-        case_id: activeCaseId,
-      };
+    // Never leave the widget stuck on "Analyzing…" if the server hangs.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-      const res = await apiClient.post("chat", payload);
+    try {
+      const res = await apiClient.post(
+        "chat",
+        { message: query, case_id: activeCaseId, history },
+        { signal: controller.signal }
+      );
       const botMsg = {
         id: `bot-${Date.now()}`,
         sender: "bot",
-        text: res.response || "No response received from intelligence engine.",
-        suggested: res.suggested_actions || [],
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text: res?.response || "No response received from intelligence engine.",
+        suggested: Array.isArray(res?.suggested_actions) ? res.suggested_actions : [],
+        timestamp: nowStamp(),
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
       const errorMsg = {
         id: `err-${Date.now()}`,
         sender: "bot",
-        text: "Error retrieving intelligence response. Please check network connection.",
+        text: describeChatError(err),
         isError: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: nowStamp(),
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
+      clearTimeout(timer);
       setIsLoading(false);
     }
   };
@@ -105,10 +207,12 @@ export default function ChatWidget() {
         id: "cleared",
         sender: "bot",
         text: "Chat history cleared. How can I assist your investigation today?",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: nowStamp(),
       },
     ]);
   };
+
+  const lastBotId = [...messages].reverse().find((m) => m.sender === "bot" && !m.isError)?.id;
 
   const quickPrompts = activeCaseId
     ? [
@@ -168,7 +272,7 @@ export default function ChatWidget() {
                   </span>
                 </div>
                 <div className="text-[10px] text-white/75 leading-tight truncate max-w-[210px]">
-                  {activeCaseId ? `Context: Case #${activeCaseId}` : "Context: Global Network"}
+                  {activeCaseId ? `Context: ${caseLabel}` : "Context: Global Network"}
                 </div>
               </div>
             </div>
@@ -254,7 +358,11 @@ export default function ChatWidget() {
                       : "bg-[#0B1224] border border-cyan-500/20 text-[#E2E8F0] rounded-bl-none"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.sender === "bot" ? (
+                    <FormattedText text={m.text} />
+                  ) : (
+                    <div className="whitespace-pre-wrap break-words">{m.text}</div>
+                  )}
                   <div
                     className={`text-[9.5px] mt-1 text-right font-mono ${
                       m.sender === "user" ? "text-white/70" : "text-textDim"
@@ -262,6 +370,25 @@ export default function ChatWidget() {
                   >
                     {m.timestamp}
                   </div>
+                  {/* Follow-up suggestions from the assistant (latest reply only) */}
+                  {m.sender === "bot" && m.id === lastBotId && !isLoading && m.suggested?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {m.suggested.map((sg) => (
+                        <button
+                          key={sg}
+                          type="button"
+                          onClick={() => handleSendMessage(sg)}
+                          className={`px-2 py-0.5 rounded-full border text-[10.5px] text-left transition-colors cursor-pointer ${
+                            isStandardMode
+                              ? "bg-white border-[#CBD5E1] text-[#0B3B60] hover:bg-[#EEF2F6] hover:border-[#0B3B60]"
+                              : "bg-cyan-500/10 border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20"
+                          }`}
+                        >
+                          {sg}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {m.sender === "user" && (
@@ -317,7 +444,7 @@ export default function ChatWidget() {
               disabled={isLoading}
               placeholder={
                 activeCaseId
-                  ? `Ask about Case #${activeCaseId}...`
+                  ? `Ask about ${caseLabel}...`
                   : "Ask about high-risk cases or scam trends..."
               }
               className={`flex-1 px-3 py-2 text-xs rounded border outline-none transition-all ${
