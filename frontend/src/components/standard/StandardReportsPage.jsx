@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import apiClient from "../../api/client";
-import StandardReportPasswordModal from "./StandardReportPasswordModal";
 import { Breadcrumb, PageHeader, Panel, Notice, StatusBadge } from "./StandardUI";
 
 const BRIEF_CONTENTS = [
@@ -28,9 +27,6 @@ export default function StandardReportsPage() {
   const [isGeneratingTakedown, setIsGeneratingTakedown] = useState(false);
   const [briefHash, setBriefHash] = useState(null);
   const [takedownHash, setTakedownHash] = useState(null);
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-  const [activeReportType, setActiveReportType] = useState("brief");
-  const [modalError, setModalError] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -42,12 +38,6 @@ export default function StandardReportsPage() {
 
   const cleanCaseNumber = caseData?.case_number?.replace("#", "").trim() || caseId;
   const caseNo = caseData?.case_number || `#${caseId}`;
-
-  const openModal = (type) => {
-    setActiveReportType(type);
-    setModalError(null);
-    setPasswordModalOpen(true);
-  };
 
   const saveBlob = async (res, filename) => {
     const blob = await res.blob();
@@ -61,32 +51,29 @@ export default function StandardReportsPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Same requests and download handling as the Analysis Mode page.
-  const handleConfirmDownload = async (password) => {
-    setModalError(null);
-    if (activeReportType === "brief") {
+  // Direct download: encrypted automatically, asks for password only when opening the PDF
+  const handleDownload = async (type) => {
+    if (type === "brief") {
       setIsGeneratingBrief(true);
       try {
-        const res = await apiClient.post(`cases/${caseId}/reports/investigative-brief`, { password });
+        const res = await apiClient.post(`cases/${caseId}/reports/investigative-brief`);
         const hash = res.headers.get("X-Document-SHA256") || res.headers.get("x-document-sha256");
         if (hash) setBriefHash(hash);
         await saveBlob(res, `investigative_brief_${cleanCaseNumber}.pdf`);
-        setPasswordModalOpen(false);
       } catch (err) {
-        setModalError(err.message || "Failed to generate brief. Please verify your officer credentials.");
+        console.error("Failed to generate brief:", err);
       } finally {
         setIsGeneratingBrief(false);
       }
     } else {
       setIsGeneratingTakedown(true);
       try {
-        const res = await apiClient.post(`cases/${caseId}/reports/takedown-request`, { password });
+        const res = await apiClient.post(`cases/${caseId}/reports/takedown-request`);
         const hash = res.headers.get("X-Document-SHA256") || res.headers.get("x-document-sha256");
         if (hash) setTakedownHash(hash);
         await saveBlob(res, `takedown_request_${cleanCaseNumber}.pdf`);
-        setPasswordModalOpen(false);
       } catch (err) {
-        setModalError(err.message || "Failed to generate takedown request. Please verify your officer credentials.");
+        console.error("Failed to generate takedown request:", err);
       } finally {
         setIsGeneratingTakedown(false);
       }
@@ -140,8 +127,7 @@ export default function StandardReportsPage() {
       />
 
       <Notice tone="info" title="Password-protected exports">
-        Each report is encrypted at file level. You will be asked to confirm your officer account password before the PDF is generated; the
-        recipient must use the same password to open it.
+        Each report is encrypted at file level. To open the downloaded PDF report, enter your officer password (<code>demo1234</code>) or Badge ID.
       </Notice>
 
       <Panel id="available-reports" title="Available Reports" flush>
@@ -165,8 +151,8 @@ export default function StandardReportsPage() {
                   <td>{r.basis}</td>
                   <td>{r.desc}</td>
                   <td style={{ minWidth: "14rem" }}>
-                    <button type="button" className="std-btn std-btn--sm" disabled={r.generating} onClick={() => openModal(r.key)}>
-                      {r.generating ? "Encrypting & synthesising…" : "Download Protected PDF"}
+                    <button type="button" className="std-btn std-btn--sm" disabled={r.generating} onClick={() => handleDownload(r.key)}>
+                      {r.generating ? "Generating Encrypted PDF…" : "Download Protected PDF"}
                     </button>
                     {r.hash && (
                       <div style={{ marginTop: "0.5rem" }}>
@@ -191,16 +177,6 @@ export default function StandardReportsPage() {
           </Panel>
         ))}
       </div>
-
-      <StandardReportPasswordModal
-        isOpen={passwordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-        reportType={activeReportType}
-        caseNumber={caseNo}
-        onConfirm={handleConfirmDownload}
-        isGenerating={isGeneratingBrief || isGeneratingTakedown}
-        error={modalError}
-      />
     </>
   );
 }
