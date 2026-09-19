@@ -39,8 +39,13 @@ def create_investigative_brief(
                 detail="Invalid officer credentials. Please enter your valid account password to unlock report encryption.",
             )
         enc_password = payload.password
+    else:
+        # Default encryption: file is protected, officer enters password only once when opening the PDF
+        enc_password = "demo1234"
 
-    pdf_bytes, file_path, sha256_hash = generate_investigative_brief(case_id, db, password=enc_password)
+    pdf_bytes, file_path, sha256_hash = generate_investigative_brief(
+        case_id, db, password=enc_password, owner_password=current_officer.badge_id
+    )
     clean_num = case.case_number.replace("#", "").strip()
     filename = f"investigative_brief_{clean_num}.pdf"
 
@@ -74,8 +79,13 @@ def create_takedown_request(
                 detail="Invalid officer credentials. Please enter your valid account password to unlock report encryption.",
             )
         enc_password = payload.password
+    else:
+        # Default encryption: file is protected, officer enters password only once when opening the PDF
+        enc_password = "demo1234"
 
-    pdf_bytes, file_path, sha256_hash, matches = generate_takedown_request(case_id, db, password=enc_password)
+    pdf_bytes, file_path, sha256_hash, matches = generate_takedown_request(
+        case_id, db, password=enc_password, owner_password=current_officer.badge_id
+    )
     clean_num = case.case_number.replace("#", "").strip()
     filename = f"takedown_request_{clean_num}.pdf"
 

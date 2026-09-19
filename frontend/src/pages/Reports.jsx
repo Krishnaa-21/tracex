@@ -11,7 +11,6 @@ import {
   Lock,
 } from "lucide-react";
 import apiClient from "../api/client";
-import ReportPasswordModal from "../components/ReportPasswordModal";
 import { useMode } from "../context/ModeContext";
 
 export default function Reports() {
@@ -32,11 +31,6 @@ export default function Reports() {
   const [briefHash, setBriefHash] = useState(null);
   const [takedownHash, setTakedownHash] = useState(null);
   const [error, setError] = useState(null);
-
-  // Password-protected report modal state
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-  const [activeReportType, setActiveReportType] = useState("brief");
-  const [modalError, setModalError] = useState(null);
 
   const loadCaseAndMatchData = async () => {
     try {
@@ -66,80 +60,68 @@ export default function Reports() {
 
   const cleanCaseNumber = caseData?.case_number?.replace("#", "").trim() || caseId;
 
-  const handleOpenBriefModal = () => {
-    setActiveReportType("brief");
-    setModalError(null);
-    setPasswordModalOpen(true);
+  // Direct download: generates encrypted PDF with no prompt on click; asks for password only when opening the PDF
+  const handleDownloadBrief = async () => {
+    setError(null);
+    setIsGeneratingBrief(true);
+    try {
+      const res = await apiClient.post(`cases/${caseId}/reports/investigative-brief`);
+
+      const hash =
+        res.headers.get("X-Document-SHA256") ||
+        res.headers.get("x-document-sha256");
+      if (hash) setBriefHash(hash);
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `investigative_brief_${cleanCaseNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message || "Failed to generate investigative brief.");
+    } finally {
+      setIsGeneratingBrief(false);
+    }
   };
 
-  const handleOpenTakedownModal = () => {
-    setActiveReportType("takedown");
-    setModalError(null);
-    setPasswordModalOpen(true);
-  };
+  const handleDownloadTakedown = async () => {
+    setError(null);
+    setIsGeneratingTakedown(true);
+    try {
+      const res = await apiClient.post(`cases/${caseId}/reports/takedown-request`);
 
-  const handleConfirmDownload = async (password) => {
-    setModalError(null);
-    if (activeReportType === "brief") {
-      setIsGeneratingBrief(true);
-      try {
-        const res = await apiClient.post(`cases/${caseId}/reports/investigative-brief`, { password });
+      const hash =
+        res.headers.get("X-Document-SHA256") ||
+        res.headers.get("x-document-sha256");
+      const matchedCount =
+        res.headers.get("X-Matched-Count") ||
+        res.headers.get("x-matched-count");
 
-        const hash =
-          res.headers.get("X-Document-SHA256") ||
-          res.headers.get("x-document-sha256");
-        if (hash) setBriefHash(hash);
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `investigative_brief_${cleanCaseNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        setPasswordModalOpen(false);
-      } catch (err) {
-        setModalError(err.message || "Failed to generate brief. Please verify your officer credentials.");
-      } finally {
-        setIsGeneratingBrief(false);
+      if (hash) setTakedownHash(hash);
+      if (matchedCount !== null && matchedCount !== undefined) {
+        setTakedownMatches((prev) => ({
+          ...prev,
+          total_matches: parseInt(matchedCount, 10) || 0,
+        }));
       }
-    } else {
-      setIsGeneratingTakedown(true);
-      try {
-        const res = await apiClient.post(`cases/${caseId}/reports/takedown-request`, { password });
 
-        const hash =
-          res.headers.get("X-Document-SHA256") ||
-          res.headers.get("x-document-sha256");
-        const matchedCount =
-          res.headers.get("X-Matched-Count") ||
-          res.headers.get("x-matched-count");
-
-        if (hash) setTakedownHash(hash);
-        if (matchedCount !== null && matchedCount !== undefined) {
-          setTakedownMatches((prev) => ({
-            ...prev,
-            total_matches: parseInt(matchedCount, 10) || 0,
-          }));
-        }
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `takedown_request_${cleanCaseNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        setPasswordModalOpen(false);
-      } catch (err) {
-        setModalError(err.message || "Failed to generate takedown request. Please verify your officer credentials.");
-      } finally {
-        setIsGeneratingTakedown(false);
-      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `takedown_request_${cleanCaseNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message || "Failed to generate takedown request.");
+    } finally {
+      setIsGeneratingTakedown(false);
     }
   };
 
@@ -280,13 +262,17 @@ export default function Reports() {
 
               <div className="pt-3 border-t border-[#E2E8F0] flex flex-col gap-2">
                 <button
-                  onClick={handleOpenBriefModal}
+                  onClick={handleDownloadBrief}
                   disabled={isGeneratingBrief}
-                  className="gov-report-brief-btn disabled:opacity-50"
+                  className="gov-report-brief-btn disabled:opacity-50 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>{isGeneratingBrief ? "Encrypting & Synthesizing..." : "Download Password-Protected Brief PDF"}</span>
+                  <span>{isGeneratingBrief ? "Generating Encrypted PDF..." : "Download Password-Protected Brief PDF"}</span>
                 </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#0B3B60] bg-[#F1F5F9] px-2.5 py-1.5 rounded border border-[#CBD5E1]">
+                  <Lock className="w-3 h-3 text-[#0B3B60] flex-shrink-0" />
+                  <span>To open report: enter your officer password (<code>demo1234</code>) or Badge ID.</span>
+                </div>
                 {briefHash && (
                   <div className="gov-sha256-row">
                     <span className="truncate">SHA-256: {briefHash}</span>
@@ -334,13 +320,17 @@ export default function Reports() {
 
               <div className="pt-3 border-t border-border flex flex-col gap-2">
                 <button
-                  onClick={handleOpenBriefModal}
+                  onClick={handleDownloadBrief}
                   disabled={isGeneratingBrief}
                   className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-blue-600/20"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>{isGeneratingBrief ? "Encrypting & Synthesizing..." : "Download Password-Protected Brief PDF"}</span>
+                  <span>{isGeneratingBrief ? "Generating Encrypted PDF..." : "Download Password-Protected Brief PDF"}</span>
                 </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 bg-black/40 px-2.5 py-1.5 rounded border border-cyan-500/20 font-mono">
+                  <Lock className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                  <span>To open report: enter officer password (<code>demo1234</code>) or Badge ID.</span>
+                </div>
                 {briefHash && (
                   <div className="text-[10px] font-mono text-textFaint truncate bg-bgSubtle p-2 rounded border border-border flex items-center justify-between">
                     <span className="truncate">SHA-256: {briefHash}</span>
@@ -391,13 +381,17 @@ export default function Reports() {
 
               <div className="pt-3 border-t border-[#E2E8F0] flex flex-col gap-2">
                 <button
-                  onClick={handleOpenTakedownModal}
+                  onClick={handleDownloadTakedown}
                   disabled={isGeneratingTakedown}
-                  className="gov-report-takedown-btn disabled:opacity-50"
+                  className="gov-report-takedown-btn disabled:opacity-50 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>{isGeneratingTakedown ? "Encrypting & Synthesizing..." : "Download Password-Protected Takedown PDF"}</span>
+                  <span>{isGeneratingTakedown ? "Generating Encrypted PDF..." : "Download Password-Protected Takedown PDF"}</span>
                 </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#0B3B60] bg-[#F1F5F9] px-2.5 py-1.5 rounded border border-[#CBD5E1]">
+                  <Lock className="w-3 h-3 text-[#0B3B60] flex-shrink-0" />
+                  <span>To open report: enter your officer password (<code>demo1234</code>) or Badge ID.</span>
+                </div>
                 {takedownHash && (
                   <div className="gov-sha256-row">
                     <span className="truncate">SHA-256: {takedownHash}</span>
@@ -445,13 +439,17 @@ export default function Reports() {
 
               <div className="pt-3 border-t border-border flex flex-col gap-2">
                 <button
-                  onClick={handleOpenTakedownModal}
+                  onClick={handleDownloadTakedown}
                   disabled={isGeneratingTakedown}
                   className="w-full py-2.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-rose-600/20"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>{isGeneratingTakedown ? "Encrypting & Synthesizing..." : "Download Password-Protected Takedown PDF"}</span>
+                  <span>{isGeneratingTakedown ? "Generating Encrypted PDF..." : "Download Password-Protected Takedown PDF"}</span>
                 </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-rose-400 bg-black/40 px-2.5 py-1.5 rounded border border-rose-500/20 font-mono">
+                  <Lock className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                  <span>To open report: enter officer password (<code>demo1234</code>) or Badge ID.</span>
+                </div>
                 {takedownHash && (
                   <div className="text-[10px] font-mono text-textFaint truncate bg-bgSubtle p-2 rounded border border-border flex items-center justify-between">
                     <span className="truncate">SHA-256: {takedownHash}</span>
@@ -463,17 +461,6 @@ export default function Reports() {
           )}
         </div>
       </div>
-
-      {/* Password Protection Modal */}
-      <ReportPasswordModal
-        isOpen={passwordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-        reportType={activeReportType}
-        caseNumber={caseData?.case_number || `#${caseId}`}
-        onConfirm={handleConfirmDownload}
-        isGenerating={isGeneratingBrief || isGeneratingTakedown}
-        error={modalError}
-      />
     </div>
   );
 }

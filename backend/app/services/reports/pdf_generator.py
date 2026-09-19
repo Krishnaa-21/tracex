@@ -336,6 +336,7 @@ def _render_pdf_with_reportlab_brief(
     correlation_matrix: List[Dict[str, Any]],
     timeline_events: List[Dict[str, Any]],
     password: Optional[str] = None,
+    owner_password: Optional[str] = None,
 ) -> bytes:
     """High-fidelity PDF renderer for investigative brief dossier using native ReportLab."""
     from reportlab.lib.pagesizes import letter
@@ -346,9 +347,11 @@ def _render_pdf_with_reportlab_brief(
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.pdfencrypt import StandardEncryption
 
-    encrypt = None
-    if password:
-        encrypt = StandardEncryption(userPassword=password, ownerPassword=password, canPrint=1, canCopy=1)
+    # File-level PDF password protection:
+    # Officer password ('demo1234') as userPassword, officer badge_id as ownerPassword
+    user_pwd = password or "demo1234"
+    owner_pwd = owner_password or (officer.badge_id if officer else "MP-IO-4471")
+    encrypt = StandardEncryption(userPassword=user_pwd, ownerPassword=owner_pwd, canPrint=1, canCopy=1)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -742,6 +745,7 @@ def _render_pdf_with_reportlab_takedown(
     officer: Optional[Officer],
     matches: List[Dict[str, Any]],
     password: Optional[str] = None,
+    owner_password: Optional[str] = None,
 ) -> bytes:
     """High-fidelity PDF renderer for statutory takedown requisition using native ReportLab."""
     from reportlab.lib.pagesizes import letter
@@ -752,9 +756,11 @@ def _render_pdf_with_reportlab_takedown(
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.pdfencrypt import StandardEncryption
 
-    encrypt = None
-    if password:
-        encrypt = StandardEncryption(userPassword=password, ownerPassword=password, canPrint=1, canCopy=1)
+    # File-level PDF password protection:
+    # Officer password ('demo1234') as userPassword, officer badge_id as ownerPassword
+    user_pwd = password or "demo1234"
+    owner_pwd = owner_password or (officer.badge_id if officer else "MP-IO-4471")
+    encrypt = StandardEncryption(userPassword=user_pwd, ownerPassword=owner_pwd, canPrint=1, canCopy=1)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -1076,7 +1082,12 @@ def _render_pdf(html_string: str, fallback_factory) -> bytes:
             raise rl_err
 
 
-def generate_investigative_brief(case_id: int, db: Session, password: Optional[str] = None) -> Tuple[bytes, Path, str]:
+def generate_investigative_brief(
+    case_id: int,
+    db: Session,
+    password: Optional[str] = None,
+    owner_password: Optional[str] = None,
+) -> Tuple[bytes, Path, str]:
     """Generate the official Investigative Brief PDF dossier.
     Returns: (pdf_bytes, saved_file_path, sha256_hash)
     """
@@ -1140,6 +1151,7 @@ def generate_investigative_brief(case_id: int, db: Session, password: Optional[s
         correlation_matrix=correlation_matrix,
         timeline_events=timeline_events,
         password=password,
+        owner_password=owner_password,
     )
 
     scam_str = (case.scam_type.value if hasattr(case.scam_type, "value") else str(case.scam_type)).replace("_", " ").title()
@@ -1168,7 +1180,12 @@ def generate_investigative_brief(case_id: int, db: Session, password: Optional[s
     return pdf_bytes, dest_path, sha256_hash
 
 
-def generate_takedown_request(case_id: int, db: Session, password: Optional[str] = None) -> Tuple[bytes, Path, str, List[Dict[str, Any]]]:
+def generate_takedown_request(
+    case_id: int,
+    db: Session,
+    password: Optional[str] = None,
+    owner_password: Optional[str] = None,
+) -> Tuple[bytes, Path, str, List[Dict[str, Any]]]:
     """Scan case indicators against threat feeds & extract all case forensic indicators
     (suspect URLs, C2 server IPs, malicious APK hashes, fraud handles) to generate Takedown Request PDF.
     Returns: (pdf_bytes, saved_file_path, sha256_hash, matched_indicators)
@@ -1318,6 +1335,7 @@ def generate_takedown_request(case_id: int, db: Session, password: Optional[str]
         officer=officer,
         matches=matches,
         password=password,
+        owner_password=owner_password,
     )
 
     clean_num = case.case_number.replace("#", "").strip()

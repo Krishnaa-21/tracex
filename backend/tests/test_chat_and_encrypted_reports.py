@@ -41,6 +41,15 @@ def test_encrypted_pdf_reports():
         assert td_ok.headers["content-type"] == "application/pdf"
         assert b"/Encrypt" in td_ok.content
 
+        # 5. Direct download without password payload (auto-encrypts, asks password only when opened)
+        direct_res = client.post(
+            "/api/cases/1/reports/investigative-brief",
+            headers=headers,
+        )
+        assert direct_res.status_code == 200
+        assert direct_res.headers["content-type"] == "application/pdf"
+        assert b"/Encrypt" in direct_res.content
+
 
 def test_ai_chat_endpoint():
     with TestClient(app) as client:
