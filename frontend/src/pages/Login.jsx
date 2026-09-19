@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, AlertCircle, ArrowRight, Loader2, Shield, Eye, HelpCircle, CheckCircle } from "lucide-react";
 import { apiClient, setToken, setOfficer } from "../api/client";
+import BetaTag from "../components/BetaTag";
 import { useMode } from "../context/ModeContext";
 import Logo from "../components/Logo";
 
@@ -127,9 +128,10 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setMode("standard")}
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white text-[#0B3B60] shadow-xs cursor-pointer"
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white text-[#0B3B60] shadow-xs cursor-pointer flex flex-col items-center leading-tight"
               >
-                🏛️ Standard Mode
+                <span>🏛️ Standard Mode</span>
+                <BetaTag tone="onLight" size="0.5rem" />
               </button>
               <button
                 type="button"
@@ -319,9 +321,10 @@ export default function Login() {
         <button
           type="button"
           onClick={() => setMode("standard")}
-          className="px-3 py-1 rounded-full text-[11px] font-medium text-slate-300 hover:text-white transition-all cursor-pointer"
+          className="px-3 py-1 rounded-full text-[11px] font-medium text-slate-300 hover:text-white transition-all cursor-pointer flex flex-col items-center leading-tight"
         >
-          🏛️ Standard Mode
+          <span>🏛️ Standard Mode</span>
+          <BetaTag tone="onDark" size="0.5rem" />
         </button>
         <button
           type="button"

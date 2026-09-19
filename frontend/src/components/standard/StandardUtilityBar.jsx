@@ -1,6 +1,7 @@
 import React from "react";
 import { useMode } from "../../context/ModeContext";
 import { PORTAL, pick, t } from "../../config/standardPortal";
+import BetaTag from "../BetaTag";
 
 /**
  * Top-most bar of the portal: "Government of [X]" identification on the left,
@@ -64,8 +65,9 @@ export default function StandardUtilityBar() {
           <div className="std-ctl" role="group" aria-label={s.displayMode}>
             <span className="std-ctl__label">{s.displayMode}:</span>
             <div className="std-seg">
-              <button type="button" aria-pressed={mode === "standard"} onClick={() => setMode("standard")}>
-                {s.standard}
+              <button type="button" className="std-seg__mode" aria-pressed={mode === "standard"} onClick={() => setMode("standard")}>
+                <span>{s.standard}</span>
+                <BetaTag tone={mode === "standard" ? "onNavy" : "onLight"} size="0.625rem" />
               </button>
               <button type="button" aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>
                 {s.analysis}

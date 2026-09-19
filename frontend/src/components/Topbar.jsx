@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getOfficer, clearAuth, apiClient } from "../api/client";
 import Logo from "./Logo";
+import BetaTag from "./BetaTag";
 import NotificationsPopover from "./NotificationsPopover";
 import ProfilePanel from "./ProfileModal";
 import { useMode } from "../context/ModeContext";
@@ -282,13 +283,14 @@ export default function Topbar({ onOpenNewInvestigation }) {
             <button
               type="button"
               onClick={() => setMode("standard")}
-              className={`px-2 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
+              className={`px-2 py-0.5 rounded-full font-bold transition-all cursor-pointer flex flex-col items-center leading-tight ${
                 mode === "standard"
                   ? "bg-white text-[#0B3B60]"
                   : "text-textDim hover:text-text"
               }`}
             >
-              🏛️ Standard
+              <span>🏛️ Standard</span>
+              <BetaTag tone={mode === "standard" ? "onLight" : "onDark"} size="0.5rem" />
             </button>
           </div>
 
