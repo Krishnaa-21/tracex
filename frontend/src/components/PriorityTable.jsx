@@ -185,9 +185,12 @@ export default function PriorityTable({ cases = [], isLoading = false, selectedD
                 }}
               />
 
-              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 py-3.5 min-w-0">
-                {/* Case ID + victim */}
-                <div className="flex items-center gap-2.5 min-w-0 sm:w-[220px] flex-shrink-0">
+              {/* Row grid — 4 columns: ID+victim | Risk | Rationale | District+type + action */}
+              <div className="flex-1 grid min-w-0 px-3 py-3.5 gap-x-3 gap-y-1.5 items-center"
+                style={{ gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,2fr) auto" }}
+              >
+                {/* Col 1: Case ID + victim */}
+                <div className="flex items-center gap-2 min-w-0">
                   {isTop1 && (
                     <span
                       className="w-2 h-2 rounded-full flex-shrink-0"
@@ -199,60 +202,53 @@ export default function PriorityTable({ cases = [], isLoading = false, selectedD
                       title="Highest risk case"
                     />
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 overflow-hidden">
                     <div
-                      className="font-mono font-bold text-[13px] leading-tight"
-                      style={{
-                        color: "#00D4FF",
-                        textShadow: "0 0 10px rgba(0,212,255,0.40)",
-                      }}
+                      className="font-mono font-bold text-[12.5px] leading-tight truncate"
+                      style={{ color: "#00D4FF", textShadow: "0 0 10px rgba(0,212,255,0.40)" }}
                     >
                       {c.case_number}
                     </div>
-                    <div className="font-semibold text-text text-[13px] leading-tight truncate">{c.victim_name}</div>
+                    <div className="font-semibold text-text text-[12px] leading-tight truncate">{c.victim_name}</div>
                   </div>
                 </div>
 
-                {/* Risk badge + score bar */}
-                <div className="flex items-center gap-2.5 sm:w-[200px] flex-shrink-0">
+                {/* Col 2: Risk badge + score bar */}
+                <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                   <RiskTag level={c.risk_level} />
                   {c.risk_score !== null && c.risk_score !== undefined && (
-                    <div className="hidden md:block">
+                    <div className="hidden lg:block flex-shrink-0">
                       <ScoreBar score={score} riskLevel={c.risk_level} />
                     </div>
                   )}
                 </div>
 
-                {/* Rationale */}
-                <div className="flex-1 min-w-0 text-[12.5px]">
+                {/* Col 3: Rationale — always truncated */}
+                <div className="min-w-0 overflow-hidden text-[12px]">
                   {c.why_flagged ? (
-                    <span className="inline-flex items-center gap-1.5 text-textDim">
+                    <span className="flex items-center gap-1.5 text-textDim min-w-0">
                       <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#F59E0B" }} />
                       <span className="truncate">{c.why_flagged}</span>
                     </span>
                   ) : (
-                    <span className="text-textFaint italic text-[12px]">Awaiting correlation</span>
+                    <span className="flex items-center gap-1.5 text-textDim min-w-0">
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(0,212,255,0.40)" }} />
+                      <span className="truncate">{c.district || "Pending"}</span>
+                      <span className="hidden xl:inline text-textFaint flex-shrink-0">·</span>
+                      <span className="hidden xl:inline truncate text-textFaint">{scamLabel}</span>
+                    </span>
                   )}
                 </div>
 
-                {/* District + type */}
-                <div className="flex items-center gap-3 sm:w-[200px] flex-shrink-0 text-[12px] text-textDim">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "rgba(0,212,255,0.40)" }} />
-                    {c.district || "Pending"}
-                  </span>
-                  <span className="hidden lg:inline text-textFaint">·</span>
-                  <span className="hidden lg:inline truncate">{scamLabel}</span>
-                </div>
-
-                {/* Investigate button */}
+                {/* Col 4: Investigate button — fixed width, no shrink */}
                 <button
                   onClick={(e) => { e.stopPropagation(); navigate(`/cases/${c.id}/graph`); }}
-                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11.5px] font-mono font-semibold rounded transition-all self-start sm:self-center cursor-pointer"
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono font-semibold rounded transition-all cursor-pointer"
                   style={{
                     background: "rgba(0,212,255,0.06)",
                     border: "1px solid rgba(0,212,255,0.25)",
                     color: "#00D4FF",
+                    whiteSpace: "nowrap",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "rgba(0,212,255,0.15)";
@@ -266,7 +262,7 @@ export default function PriorityTable({ cases = [], isLoading = false, selectedD
                   }}
                 >
                   <span>Investigate</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>

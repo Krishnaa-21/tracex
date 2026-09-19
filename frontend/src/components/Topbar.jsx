@@ -34,6 +34,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
   const [allCasesCache, setAllCasesCache] = useState(null);
 
   const dropdownRef = useRef(null);
+  const dropdownPanelRef = useRef(null);
   const notifButtonRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -84,10 +85,12 @@ export default function Topbar({ onOpenNewInvestigation }) {
     return () => { cancelled = true; };
   }, [searchQuery]);
 
-  // Click outside listener
+  // Click outside — checks both the trigger button and the dropdown panel
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+      const clickedInsideButton = dropdownRef.current && dropdownRef.current.contains(e.target);
+      const clickedInsidePanel = dropdownPanelRef.current && dropdownPanelRef.current.contains(e.target);
+      if (!clickedInsideButton && !clickedInsidePanel) setDropdownOpen(false);
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -144,7 +147,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
       <div className="h-14 flex items-center justify-between gap-4">
         {/* Left: Branding + live indicator */}
         <NavLink to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity flex-shrink-0">
-          <Logo size="sm" showSubtitle={true} />
+          <Logo size="sm" variant="icon" showSubtitle={false} />
           {/* LIVE status dot */}
           <div className="hidden sm:flex items-center gap-1.5 ml-1">
             <span
@@ -341,28 +344,32 @@ export default function Topbar({ onOpenNewInvestigation }) {
               />
             </button>
 
-            {/* Profile Dropdown — fixed position to avoid clipping by header stacking context */}
+            {/* Profile Dropdown — fixed position, viewport-safe, with panelRef for click-outside */}
             {dropdownOpen && (
               <div
-                className="fixed w-56 py-1.5 z-[200] text-[12.5px] select-none animate-fade-in-up"
+                ref={dropdownPanelRef}
+                className="fixed w-60 z-[200] text-[12.5px] select-none animate-fade-in-up"
                 style={{
-                  top: "56px",
-                  right: "16px",
-                  background: "rgba(5,10,22,0.98)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  border: "1px solid rgba(0,212,255,0.22)",
-                  borderRadius: "8px",
-                  boxShadow: "0 12px 48px rgba(0,0,0,0.80), 0 0 24px rgba(0,212,255,0.10)",
+                  top: "60px",
+                  right: "12px",
+                  maxHeight: "calc(100vh - 72px)",
+                  overflowY: "auto",
+                  background: "rgba(4,9,20,0.98)",
+                  backdropFilter: "blur(24px)",
+                  WebkitBackdropFilter: "blur(24px)",
+                  border: "1px solid rgba(0,229,200,0.20)",
+                  borderRadius: "10px",
+                  boxShadow: "0 16px 56px rgba(0,0,0,0.85), 0 0 0 0.5px rgba(0,229,200,0.08), 0 0 28px rgba(0,229,200,0.08)",
                 }}
               >
+                {/* User info header */}
                 <div
-                  className="px-3.5 py-2.5 mb-1"
-                  style={{ borderBottom: "1px solid rgba(0,212,255,0.10)", background: "rgba(0,212,255,0.04)" }}
+                  className="px-4 py-3 mb-1"
+                  style={{ borderBottom: "1px solid rgba(0,229,200,0.10)", background: "rgba(0,229,200,0.03)" }}
                 >
-                  <p className="font-semibold text-text">{officer.name}</p>
-                  <p className="text-[11px] font-mono font-medium mt-0.5" style={{ color: "#00D4FF" }}>{officer.badge_id}</p>
-                  <p className="text-[10.5px] mt-0.5 text-textDim">{officer.station_name}</p>
+                  <p className="font-semibold text-[13px] text-text">{officer.name}</p>
+                  <p className="text-[11px] font-mono font-medium mt-0.5" style={{ color: "#00E5C8" }}>{officer.badge_id}</p>
+                  <p className="text-[11px] mt-0.5 text-textDim">{officer.station_name}</p>
                 </div>
 
                 {[
@@ -370,7 +377,7 @@ export default function Topbar({ onOpenNewInvestigation }) {
                     icon: User,
                     label: "My profile & credentials",
                     onClick: () => { setDropdownOpen(false); setProfileModalOpen(true); },
-                    color: "rgba(0,212,255,0.70)",
+                    color: "rgba(0,229,200,0.75)",
                   },
                   {
                     icon: Settings,
@@ -382,9 +389,9 @@ export default function Topbar({ onOpenNewInvestigation }) {
                   <button
                     key={item.label}
                     onClick={item.onClick}
-                    className="w-full px-3.5 py-2 text-left flex items-center gap-2.5 transition-colors cursor-pointer text-textDim"
+                    className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors cursor-pointer text-textDim"
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(0,212,255,0.06)";
+                      e.currentTarget.style.background = "rgba(0,229,200,0.06)";
                       e.currentTarget.style.color = "#E2E8F0";
                     }}
                     onMouseLeave={(e) => {
@@ -397,11 +404,11 @@ export default function Topbar({ onOpenNewInvestigation }) {
                   </button>
                 ))}
 
-                <div style={{ borderTop: "1px solid rgba(0,212,255,0.08)", margin: "4px 0" }} />
+                <div style={{ borderTop: "1px solid rgba(0,229,200,0.08)", margin: "4px 0" }} />
 
                 <button
                   onClick={handleSignOut}
-                  className="w-full px-3.5 py-2 text-left flex items-center gap-2.5 transition-colors cursor-pointer"
+                  className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors cursor-pointer"
                   style={{ color: "#FF8BA0" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,59,92,0.08)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -409,6 +416,14 @@ export default function Topbar({ onOpenNewInvestigation }) {
                   <LogOut className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#FF3B5C" }} />
                   <span>Sign out</span>
                 </button>
+
+                {/* Session footer */}
+                <div
+                  className="px-4 py-2 text-[10px] font-mono"
+                  style={{ borderTop: "1px solid rgba(0,229,200,0.08)", color: "rgba(0,229,200,0.35)" }}
+                >
+                  Session authenticated via JWT
+                </div>
               </div>
             )}
           </div>

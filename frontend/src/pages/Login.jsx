@@ -163,9 +163,9 @@ export default function Login() {
           <div className="absolute bottom-0 right-0 w-px h-full" style={{ background: "rgba(139,92,246,0.6)" }} />
         </div>
 
-        {/* Logo & heading — Logo already includes brand name, no duplicate needed */}
+        {/* Logo — full wordmark logo image, no duplicate text */}
         <div className="flex flex-col items-center mb-6">
-          <Logo size="lg" showSubtitle={true} />
+          <Logo variant="logo" size="lg" showSubtitle={true} />
         </div>
 
         {/* Boot terminal mini display */}
