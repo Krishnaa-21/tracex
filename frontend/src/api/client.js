@@ -34,16 +34,30 @@ export async function request(endpoint, options = {}) {
   }
 
   const cleanEndpoint = endpoint.replace(/^\//, "");
-  const primaryBase = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
-  
-  // Build candidate URL list to seamlessly handle IPv4/IPv6 and proxy fallbacks
+  let primaryBase = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
+
+  // Auto-detect production on Render or missing VITE_API_BASE_URL
+  if (!primaryBase || primaryBase.includes("localhost") || primaryBase.includes("127.0.0.1")) {
+    if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
+      primaryBase = "https://tracex-backend-3.onrender.com/api";
+    } else if (!primaryBase) {
+      primaryBase = "http://localhost:8000/api";
+    }
+  }
+
+  // Ensure base URL always ends with /api to prevent 404 routing errors
+  if (!primaryBase.endsWith("/api")) {
+    primaryBase = `${primaryBase}/api`;
+  }
+
+  // Build candidate URL list to seamlessly handle IPv4/IPv6 and fallback URLs
   const candidateBases = [primaryBase];
   if (primaryBase.includes("localhost:8000")) {
     candidateBases.push("http://127.0.0.1:8000/api", "/api");
   } else if (primaryBase.includes("127.0.0.1:8000")) {
     candidateBases.push("http://localhost:8000/api", "/api");
-  } else if (primaryBase === "/api") {
-    candidateBases.push("http://127.0.0.1:8000/api", "http://localhost:8000/api");
+  } else if (primaryBase.includes("onrender.com")) {
+    candidateBases.push("https://tracex-backend-3.onrender.com/api");
   }
 
   let lastError = null;
