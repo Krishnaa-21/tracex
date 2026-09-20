@@ -3,31 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TraceX — EPINOIA 2026 Pitch Deck (IIM Indore)</title>
+  <title>TraceX — EPINOIA 2026 Presentation (Atharv Ranbhoomi, IIM Indore)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0B1120;
-      --card-bg: #131E32;
-      --card-border: #25354F;
+      --bg-dark: #0A0F1D;
+      --card-bg: #121C2F;
+      --card-border: #283A5A;
       --cyan: #00D4FF;
-      --cyan-muted: #38BDF8;
+      --cyan-light: #7DE3FF;
       --emerald: #10B981;
       --coral: #F43F5E;
       --amber: #F59E0B;
-      --purple: #818CF8;
+      --purple: #939CFA;
       --text-white: #FFFFFF;
+      --text-light: #DAE4F0;
       --text-muted: #94A3B8;
-      --text-dim: #64748B;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background-color: #060913;
@@ -42,7 +38,6 @@
       justify-content: center;
     }
 
-    /* Presentation Screen Container */
     #deck-viewport {
       width: 95vw;
       max-width: 1400px;
@@ -61,159 +56,141 @@
       display: none;
       width: 100%;
       height: 100%;
-      padding: 2.5rem 3rem;
+      padding: 2.8rem 3.5rem;
       flex-direction: column;
       position: relative;
       animation: fadeIn 0.3s ease-out;
     }
 
-    .slide.active {
-      display: flex;
-    }
+    .slide.active { display: flex; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Slide Header */
     .slide-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-      padding-bottom: 0.8rem;
+      margin-bottom: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.9rem;
     }
 
     .header-left .tag {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       color: var(--cyan);
       text-transform: uppercase;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.4rem;
     }
 
     .header-left .title {
-      font-size: 1.65rem;
+      font-size: 1.8rem;
       font-weight: 800;
       color: var(--text-white);
       letter-spacing: -0.02em;
     }
 
     .header-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 700;
-      color: var(--text-dim);
+      color: var(--text-muted);
     }
 
-    /* Card Components */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 1.25rem;
+      border-radius: 10px;
+      padding: 1.4rem;
       display: flex;
       flex-direction: column;
-      position: relative;
     }
 
     .card-title {
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 700;
       letter-spacing: 0.02em;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      margin-bottom: 0.6rem;
     }
 
     .card-desc {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.55;
+      font-size: 0.9rem;
+      color: var(--text-light);
+      line-height: 1.6;
     }
 
-    /* Controls Bar */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; flex: 1; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; flex: 1; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; flex: 1; }
+    .grid-2x2 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.4rem; flex: 1; }
+
+    .bullet-list { list-style: none; margin-top: 0.6rem; }
+    .bullet-list li {
+      position: relative;
+      padding-left: 1.2rem;
+      margin-bottom: 0.65rem;
+      font-size: 0.88rem;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+    .bullet-list li::before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: var(--cyan-light);
+      font-weight: bold;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border: 1px solid;
+    }
+
     #controls {
       position: fixed;
       bottom: 1rem;
       display: flex;
       align-items: center;
       gap: 1rem;
-      background: rgba(19, 30, 50, 0.85);
+      background: rgba(18, 28, 47, 0.9);
       backdrop-filter: blur(12px);
-      padding: 0.5rem 1.2rem;
+      padding: 0.5rem 1.4rem;
       border-radius: 30px;
       border: 1px solid var(--card-border);
       z-index: 100;
     }
 
     .btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: #fff;
-      padding: 0.35rem 0.8rem;
+      padding: 0.4rem 0.9rem;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .btn:hover {
-      background: var(--cyan);
-      color: #000;
-      border-color: var(--cyan);
-    }
+    .btn:hover { background: var(--cyan); color: #000; border-color: var(--cyan); }
 
     #slide-indicator {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--cyan-muted);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--cyan-light);
       min-width: 65px;
       text-align: center;
     }
 
-    /* Utilities */
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; flex: 1; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; flex: 1; }
-    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; flex: 1; }
-    .grid-2-1 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; flex: 1; }
-
-    .bullet-list { list-style: none; margin-top: 0.5rem; }
-    .bullet-list li {
-      position: relative;
-      padding-left: 1.1rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.45;
-    }
-    .bullet-list li::before {
-      content: "▸";
-      position: absolute;
-      left: 0;
-      color: var(--cyan);
-      font-weight: bold;
-    }
-
-    .badge-pill {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      border: 1px solid;
-    }
-
-    /* Print styling */
     @media print {
-      body { overflow: visible; background: #0B1120; }
+      body { overflow: visible; background: #0A0F1D; }
       #deck-viewport { width: 100vw; max-width: none; aspect-ratio: auto; border: none; box-shadow: none; }
       .slide { display: flex !important; page-break-after: always; height: 100vh; }
       #controls { display: none; }
@@ -229,49 +206,34 @@
       <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
         <div>
           <span class="badge-pill" style="color: var(--cyan); border-color: var(--cyan); background: rgba(0, 212, 255, 0.08);">
-            EPINOIA 2026 • FLAGSHIP HACKATHON • ATHARV RANBHOOMI × IIM INDORE
+            EPINOIA 2026 • FLAGSHIP HACKATHON • ATHARV RANBHOOMI, IIM INDORE
           </span>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
             <div>
-              <h1 style="font-size: 4rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: #fff;">
+              <h1 style="font-size: 4.2rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: #fff;">
                 Trace<span style="color: var(--cyan);">X</span>
               </h1>
-              <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--cyan-muted); margin-top: 0.5rem;">
-                Unified Cyber Fraud Intelligence & Forensic Correlation Console
+              <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--cyan-light); margin-top: 0.6rem;">
+                AI-Powered Cyber Fraud Intelligence & Correlation Console
               </h2>
-              <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem; max-width: 700px; line-height: 1.5;">
-                Automating multi-hop entity correlation, cross-case syndicate discovery, and statutory freeze directives for Law Enforcement during the critical Golden Hour.
+              <p style="font-size: 1.05rem; color: var(--text-light); margin-top: 0.8rem; max-width: 720px; line-height: 1.6;">
+                Empowering police investigating officers to connect disparate telecom, banking, and digital evidence within minutes—stopping illicit fund transfers during the critical Golden Hour.
               </p>
             </div>
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.2rem; text-align: center;">
-              <img src="assets/atharv_ranbhoomi_logo.png" alt="Atharv Ranbhoomi" style="width: 110px; height: 110px; object-fit: contain;">
-              <div style="font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">Atharv Ranbhoomi '26</div>
-              <div style="font-size: 0.72rem; color: var(--cyan);">IIM Indore • Round 1</div>
+            <div style="background: rgba(18, 28, 47, 0.9); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.4rem; text-align: center;">
+              <img src="assets/atharv_ranbhoomi_logo.png" alt="Atharv Ranbhoomi" style="width: 120px; height: 120px; object-fit: contain;">
+              <div style="font-size: 0.95rem; font-weight: 700; margin-top: 0.6rem; color: #fff;">Atharv Ranbhoomi '26</div>
+              <div style="font-size: 0.78rem; color: var(--cyan); font-weight: 600;">IIM Indore • Round 1 Qualifier</div>
             </div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
-          <div class="card">
-            <div class="card-title" style="color: var(--cyan);">
-              TEAM THUNDERBYTES • Shri Vaishnav Vidyapeeth Vishwavidyalaya, Indore
-            </div>
-            <ul class="bullet-list" style="margin-top: 0.3rem;">
-              <li><strong>Ankit Tank</strong> (Team Leader) — ankittank9977@gmail.com | +91 9977577014</li>
-              <li><strong>Krishna Prajapat</strong> (System Architect & Frontend) — krishnaaaprajapattt@gmail.com</li>
-              <li><strong>Avnish Sharma</strong> (Backend & Correlation Engine) — avnishsharma4316@gmail.com</li>
-              <li><strong>Tarun Pandya</strong> (Forensic Reports & Risk Models) — pandyatarun65@gmail.com</li>
-            </ul>
+        <div class="card" style="margin-top: 1.8rem; border-color: rgba(0, 212, 255, 0.3);">
+          <div class="card-title" style="color: var(--cyan); font-size: 0.95rem;">
+            PRESENTED BY TEAM THUNDERBYTES • SHRI VAISHNAV VIDYAPEETH VISHWAVIDYALAYA (SVVV), INDORE
           </div>
-
-          <div class="card" style="border-color: rgba(16, 185, 129, 0.4);">
-            <div class="card-title" style="color: var(--emerald);">VERIFIED SUBMISSION ASSETS</div>
-            <ul class="bullet-list" style="margin-top: 0.3rem;">
-              <li><strong>Live App:</strong> <a href="https://tracex-frontend-3.onrender.com/" target="_blank" style="color: var(--cyan-muted);">tracex-frontend-3.onrender.com</a></li>
-              <li><strong>Video:</strong> <a href="https://youtu.be/oUuxdL-CVBA" target="_blank" style="color: var(--cyan-muted);">youtu.be/oUuxdL-CVBA</a></li>
-              <li><strong>GitHub:</strong> <a href="https://github.com/Krishnaa-21/tracex" target="_blank" style="color: var(--cyan-muted);">github.com/Krishnaa-21/tracex</a></li>
-              <li><strong>Officer Login:</strong> Badge: <code style="color: #fff;">MP-IO-4471</code> | Pass: <code style="color: #fff;">demo1234</code></li>
-            </ul>
+          <div style="font-size: 0.9rem; color: var(--text-light); line-height: 1.5;">
+            Ankit Tank (Team Leader) &nbsp;|&nbsp; Krishna Prajapat (System Architect) &nbsp;|&nbsp; Avnish Sharma (Backend Lead) &nbsp;|&nbsp; Tarun Pandya (Forensics Lead)
           </div>
         </div>
       </div>
@@ -281,34 +243,34 @@
     <div class="slide" id="slide-2">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Problem Statement & Real-World Friction</div>
-          <div class="title">The Golden Hour Paralysis in Cyber Crime Investigation</div>
+          <div class="tag">The Real-World Challenge</div>
+          <div class="title">Why Investigating Cyber Fraud Takes Days Instead of Hours</div>
         </div>
         <div class="header-right">EPINOIA '26 • 02 / 09</div>
       </div>
       <div class="grid-3">
         <div class="card" style="border-top: 3px solid var(--coral);">
-          <div class="card-title" style="color: var(--coral);">1. FRAGMENTED EVIDENCE SILOS</div>
+          <div class="card-title" style="color: var(--coral);">1. FRAGMENTED EVIDENCE</div>
           <ul class="bullet-list">
-            <li><strong>Heterogeneous Formats:</strong> Investigating Officers (IOs) receive Excel dumps from 10+ different banks, CDR/IPDR raw text from telecom operators, and .eml email logs.</li>
-            <li><strong>Manual Cell-by-Cell Cross Checks:</strong> Officers spend hours performing manual spreadsheet VLOOKUPs across 10,000+ transaction rows.</li>
-            <li><strong>Zero Unified Schema:</strong> No interoperability between bank statements, UPI merchant sheets, and cellular tower coordinates.</li>
+            <li><strong>Multi-Vendor Formats:</strong> Police receive messy raw Excel sheets from 10+ banks, CDR text dumps from telcos, and .eml logs.</li>
+            <li><strong>Manual Spreadsheet Checks:</strong> Investigating Officers spend hours running VLOOKUPs across 10,000+ transaction rows.</li>
+            <li><strong>Zero Interoperability:</strong> No standard schema connects cell towers, bank accounts, and UPI handles.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--amber);">
-          <div class="card-title" style="color: var(--amber);">2. LOST GOLDEN HOUR (< 2 HOURS)</div>
+          <div class="card-title" style="color: var(--amber);">2. THE LOST GOLDEN HOUR</div>
           <ul class="bullet-list">
-            <li><strong>Rapid Multi-Hop Laundering:</strong> Stolen cyber funds are routed through 4 to 6 mule accounts and withdrawn at ATMs within 45 minutes of the fraud.</li>
-            <li><strong>48-Hour Investigation Delay:</strong> Manual analysis takes 24–72 hours per case. By the time links are found, accounts are empty.</li>
-            <li><strong>Disposable Infrastructure:</strong> Cyber syndicates discard SIM cards and burner VPAs within hours, turning trails cold.</li>
+            <li><strong>Rapid Fund Layering:</strong> Stolen money is routed through 4 to 6 mule accounts and withdrawn at ATMs within 45 minutes.</li>
+            <li><strong>48-Hour Delay:</strong> Manual spreadsheet analysis takes 24 to 72 hours. By the time links are spotted, accounts are empty.</li>
+            <li><strong>Disposable Infrastructure:</strong> Fraudsters abandon burner SIMs and temporary VPAs within hours, leaving cold trails.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--purple);">
           <div class="card-title" style="color: var(--purple);">3. CROSS-CASE BLIND SPOTS</div>
           <ul class="bullet-list">
-            <li><strong>Organized Crime Syndicates:</strong> The same beneficiary bank account or phone number is often active across 15 FIRs in 4 different districts simultaneously.</li>
-            <li><strong>Station-Level Silos:</strong> A police station in Bhopal has no automated way of knowing Indore Cyber Cell is tracking the exact same IMEI device.</li>
-            <li><strong>Officer Workload Surge:</strong> Thousands of daily complaints on 1930/NCRP with limited technical cyber staff.</li>
+            <li><strong>Organized Crime Syndicates:</strong> The same mule account is active across 15+ FIRs in multiple districts simultaneously.</li>
+            <li><strong>Station-Level Silos:</strong> Bhopal Cyber Cell has no automated way to know that Indore Police is tracking the same IMEI device.</li>
+            <li><strong>Officer Workload Surge:</strong> Hundreds of complaints flood in daily on 1930/NCRP with limited cyber staff.</li>
           </ul>
         </div>
       </div>
@@ -318,33 +280,33 @@
     <div class="slide" id="slide-3">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Solution Overview</div>
-          <div class="title">TraceX: Unified Cyber Crime Operations Console</div>
+          <div class="tag">Our Solution</div>
+          <div class="title">TraceX: A Unified Operations Console for Law Enforcement</div>
         </div>
         <div class="header-right">EPINOIA '26 • 03 / 09</div>
       </div>
-      <div class="grid-2-1">
-        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <div class="grid-2">
+        <div style="display: flex; flex-direction: column; gap: 1.4rem;">
           <div class="card" style="border-left: 3px solid var(--cyan);">
-            <div class="card-title" style="color: var(--cyan);">INGESTION TO CORRELATION IN SECONDS</div>
+            <div class="card-title" style="color: var(--cyan);">1. INGESTION TO CORRELATION IN MINUTES</div>
             <p class="card-desc">
-              TraceX ingests disparate digital evidence—CDRs, bank account sheets, UPI transaction dumps, IPDR records, and email headers. Our automated normalization pipeline extracts, standardizes, and resolves entities into a unified graph in real time.
+              TraceX ingests messy real-world evidence—CDRs, bank account sheets, UPI logs, IPDR dumps, and email headers. Our automated normalization pipeline standardizes and links all entities on an interactive visual graph in seconds.
             </p>
           </div>
           <div class="card" style="border-left: 3px solid var(--emerald);">
-            <div class="card-title" style="color: var(--emerald);">GROUNDED AI & STATUTORY FREEZE DIRECTIVES</div>
+            <div class="card-title" style="color: var(--emerald);">2. GROUNDED AI & STATUTORY FREEZE DIRECTIVES</div>
             <p class="card-desc">
-              Combines an offline-resilient AI Co-pilot grounded in case evidence with automated PDF generators that produce court-admissible Section 91 CrPC Bank Debit Freeze notices and Section 69A IT Act Emergency Takedown orders with SHA-256 integrity verification.
+              Combines an evidence-grounded AI Co-pilot with automated PDF generators that produce court-ready Section 91 CrPC Bank Debit-Freeze notices and Section 69A IT Act Emergency Takedowns with tamper-evident SHA-256 cryptographic verification.
             </p>
           </div>
         </div>
-        <div class="card" style="background: rgba(15, 23, 42, 0.7);">
-          <div class="card-title" style="color: #fff;">QUANTIFIABLE ADVANTAGES</div>
+        <div class="card" style="background: rgba(18, 28, 47, 0.8);">
+          <div class="card-title" style="color: #fff;">OPERATIONAL ADVANTAGES</div>
           <ul class="bullet-list">
-            <li><strong>From 48 Hours to 3 Minutes:</strong> Evidence processing and case triage accelerated by 95% within the Golden Hour.</li>
-            <li><strong>100% Schema Agnostic:</strong> Native parsing for telecom CDRs, Indian bank spreadsheets, and device logs.</li>
-            <li><strong>Cross-Case Syndicate Discovery:</strong> Automatically alerts officers when an entity appears in other ongoing police cases.</li>
-            <li><strong>Dual Operational UX:</strong> Tactical Dark SOC cockpit for forensic analysts + Minimalist Standard Government skin for senior administrative review.</li>
+            <li><strong>From 48h to 3m:</strong> Case triage and entity correlation accelerated by 95% within the Golden Hour.</li>
+            <li><strong>100% Schema Agnostic:</strong> Ingests telecom and bank files without requiring departments to change formats.</li>
+            <li><strong>Cross-Case Alerts:</strong> Instantly highlights when a suspect account is tied to multiple police FIRs.</li>
+            <li><strong>Dual Operational UX:</strong> Tactical Dark Mode for cyber analysts + Formal Government Skin for court documentation.</li>
           </ul>
         </div>
       </div>
@@ -354,46 +316,46 @@
     <div class="slide" id="slide-4">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">System Pipeline</div>
-          <div class="title">End-to-End Investigative Architecture Flow</div>
+          <div class="tag">System Workflow</div>
+          <div class="title">How TraceX Works: A Simple 4-Step Pipeline</div>
         </div>
         <div class="header-right">EPINOIA '26 • 04 / 09</div>
       </div>
       <div class="grid-4">
         <div class="card" style="border-top: 3px solid var(--cyan);">
-          <span class="badge-pill" style="color: var(--cyan); border-color: var(--cyan); width: fit-content; margin-bottom: 0.5rem;">STEP 01</span>
+          <span class="badge-pill" style="color: var(--cyan); border-color: var(--cyan); width: fit-content; margin-bottom: 0.6rem;">STEP 01</span>
           <div class="card-title" style="color: #fff;">INGESTION & ETL</div>
           <ul class="bullet-list">
-            <li><strong>Raw Ingestion:</strong> Drag-and-drop CDR, Bank Excel, UPI statements, and .eml logs.</li>
-            <li><strong>Sanitization:</strong> E.164 phone normalizer, UPI VPA cleanups, IFSC validator.</li>
-            <li><strong>Evidence Store:</strong> Hash-indexed storage of original files in database.</li>
+            <li><strong>Raw File Upload:</strong> Drop in CDR, Bank Excel, UPI statements, and .eml logs.</li>
+            <li><strong>Sanitization:</strong> Normalizes phone numbers (E.164), UPI handles, and bank accounts.</li>
+            <li><strong>Evidence Seal:</strong> Indexes files with SHA-256 integrity hashes.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--purple);">
-          <span class="badge-pill" style="color: var(--purple); border-color: var(--purple); width: fit-content; margin-bottom: 0.5rem;">STEP 02</span>
-          <div class="card-title" style="color: #fff;">GRAPH CORRELATION</div>
+          <span class="badge-pill" style="color: var(--purple); border-color: var(--purple); width: fit-content; margin-bottom: 0.6rem;">STEP 02</span>
+          <div class="card-title" style="color: #fff;">CORRELATION</div>
           <ul class="bullet-list">
-            <li><strong>Entity Extraction:</strong> Phones, Accounts, VPAs, IPs, IMEIs, Domains.</li>
-            <li><strong>NetworkX Graph:</strong> Resolves 1st, 2nd, and 3rd-hop connection chains.</li>
-            <li><strong>Syndicate Match:</strong> Flags entities overlapping with other FIR cases.</li>
+            <li><strong>Entity Extraction:</strong> Phones, Accounts, VPAs, IPs, IMEIs, and Domains.</li>
+            <li><strong>Multi-Hop Graph:</strong> NetworkX builds 1st, 2nd, and 3rd-degree relationship chains.</li>
+            <li><strong>Syndicate Match:</strong> Auto-flags entities shared across multiple cases.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--coral);">
-          <span class="badge-pill" style="color: var(--coral); border-color: var(--coral); width: fit-content; margin-bottom: 0.5rem;">STEP 03</span>
+          <span class="badge-pill" style="color: var(--coral); border-color: var(--coral); width: fit-content; margin-bottom: 0.6rem;">STEP 03</span>
           <div class="card-title" style="color: #fff;">RISK SCORING</div>
           <ul class="bullet-list">
-            <li><strong>Scam Profiles:</strong> Heuristic models for UPI scam, investment fraud, and sextortion.</li>
-            <li><strong>Velocity Logic:</strong> Rapid fund transfer indicators across mule layers.</li>
-            <li><strong>Composite Score:</strong> 0–100 threat rating with confidence calculations.</li>
+            <li><strong>Fraud Profiles:</strong> Rules calibrated for UPI scams, investment fraud, and sextortion.</li>
+            <li><strong>Velocity Indicators:</strong> Detects rapid fund transfers across multiple mule layers.</li>
+            <li><strong>Composite Score:</strong> Produces an intuitive 0–100 threat rating.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--emerald);">
-          <span class="badge-pill" style="color: var(--emerald); border-color: var(--emerald); width: fit-content; margin-bottom: 0.5rem;">STEP 04</span>
-          <div class="card-title" style="color: #fff;">ACTION & REPORT</div>
+          <span class="badge-pill" style="color: var(--emerald); border-color: var(--emerald); width: fit-content; margin-bottom: 0.6rem;">STEP 04</span>
+          <div class="card-title" style="color: #fff;">ACTION & OUTPUT</div>
           <ul class="bullet-list">
-            <li><strong>Interactive Graph:</strong> Force layout with physics control and entity filters.</li>
-            <li><strong>Statutory PDF:</strong> Instant Sec 91 CrPC & Sec 69A IT Act legal orders.</li>
-            <li><strong>Forensic AI Chat:</strong> Grounded Co-pilot answers case queries with offline fallback.</li>
+            <li><strong>Interactive Graph:</strong> Force-directed visual workspace with category filters.</li>
+            <li><strong>Legal Directives:</strong> Instant generation of Section 91 CrPC Bank Freeze orders.</li>
+            <li><strong>AI Assistant:</strong> Grounded Co-pilot answers queries with offline fallback.</li>
           </ul>
         </div>
       </div>
@@ -403,41 +365,31 @@
     <div class="slide" id="slide-5">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Functional Capabilities</div>
-          <div class="title">6 Production-Ready Implemented Features</div>
+          <div class="tag">Implemented Capabilities</div>
+          <div class="title">Core Features Built & Working in GitHub Today</div>
         </div>
         <div class="header-right">EPINOIA '26 • 05 / 09</div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1rem; flex: 1;">
+      <div class="grid-2x2">
         <div class="card">
-          <div class="card-title" style="color: var(--cyan);">Heterogeneous Evidence ETL</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">backend/app/services/ingestion/</div>
-          <p class="card-desc">Parses CDRs, Bank statements, UPI sheets, IPDRs, and .eml email headers into normalized entity records.</p>
+          <div class="card-title" style="color: var(--cyan);">1. HETEROGENEOUS EVIDENCE ETL</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace;">backend/app/services/ingestion/</div>
+          <p class="card-desc">Ingests and normalizes real-world CDRs, bank Excel dumps, UPI statements, and .eml email headers into clean entity records without requiring strict schemas.</p>
         </div>
         <div class="card">
-          <div class="card-title" style="color: var(--purple);">Clustered Multi-Hop Graph</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">frontend/src/pages/ConnectionsGraph.jsx</div>
-          <p class="card-desc">Force-directed interactive visualization with hub-and-spoke clustering, entity category color coding, and physics control.</p>
+          <div class="card-title" style="color: var(--purple);">2. CLUSTERED MULTI-HOP GRAPH</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace;">frontend/src/pages/ConnectionsGraph.jsx</div>
+          <p class="card-desc">Interactive force-directed graph with hub-and-spoke grouping, physics pause, and entity category color coding (phone, bank, UPI, IP, IMEI).</p>
         </div>
         <div class="card">
-          <div class="card-title" style="color: var(--coral);">Scam-Profile Risk Scoring</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">backend/app/services/risk/scoring.py</div>
-          <p class="card-desc">Composite 0-100 threat scores using transaction velocity, shared mule accounts, and burner SIM patterns.</p>
+          <div class="card-title" style="color: var(--coral);">3. SCAM-PROFILE RISK SCORING</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace;">backend/app/services/risk/scoring.py</div>
+          <p class="card-desc">Calculates composite 0–100 threat ratings based on transaction velocity, mule account reuse, burner SIMs, and cross-case linkage confidence.</p>
         </div>
         <div class="card">
-          <div class="card-title" style="color: var(--emerald);">Statutory Legal Orders</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">backend/app/services/reports/pdf_generator.py</div>
-          <p class="card-desc">Automated ReportLab generation of Section 91 CrPC Bank Freeze & Section 69A IT Act Takedown orders with SHA-256 seal.</p>
-        </div>
-        <div class="card">
-          <div class="card-title" style="color: var(--cyan-muted);">Grounded Cyber AI Co-Pilot</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">backend/app/services/ai/chat_engine.py</div>
-          <p class="card-desc">GPT-4o-mini powered investigative assistant with strict RAG case-grounding and seamless offline rule-based fallback.</p>
-        </div>
-        <div class="card">
-          <div class="card-title" style="color: var(--amber);">Dual Operational UX Modes</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem;">frontend/src/context/ModeContext.jsx</div>
-          <p class="card-desc">One-click switch between dark Tactical Analysis Mode (SOC cockpit) and formal Standard Mode (government portal skin).</p>
+          <div class="card-title" style="color: var(--emerald);">4. STATUTORY FREEZE DIRECTIVES</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace;">backend/app/services/reports/pdf_generator.py</div>
+          <p class="card-desc">Instant ReportLab vector generation of Section 91 CrPC Bank Debit Freeze notices and Section 69A IT Act Takedown orders with SHA-256 seal.</p>
         </div>
       </div>
     </div>
@@ -446,167 +398,133 @@
     <div class="slide" id="slide-6">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Technical Architecture</div>
-          <div class="title">Full-Stack Codebase Stack from GitHub</div>
+          <div class="tag">Technical Implementation</div>
+          <div class="title">Technology Stack & High-Level Architecture</div>
         </div>
         <div class="header-right">EPINOIA '26 • 06 / 09</div>
       </div>
-      <div class="grid-4">
+      <div class="grid-2">
         <div class="card" style="border-top: 3px solid var(--cyan);">
-          <div class="card-title" style="color: var(--cyan);">FRONTEND LAYER</div>
+          <div class="card-title" style="color: var(--cyan);">SIMPLE ARCHITECTURAL FLOW</div>
           <ul class="bullet-list">
-            <li><strong>Core:</strong> React 18 SPA + Vite 5</li>
-            <li><strong>Styles:</strong> Tailwind CSS + Lucide</li>
-            <li><strong>Routing:</strong> React Router DOM v6</li>
-            <li><strong>Visualization:</strong> Custom SVG Clustered Graph Engine</li>
-            <li><strong>Context:</strong> Dual Mode State Engine</li>
-          </ul>
-        </div>
-        <div class="card" style="border-top: 3px solid var(--purple);">
-          <div class="card-title" style="color: var(--purple);">BACKEND API LAYER</div>
-          <ul class="bullet-list">
-            <li><strong>Framework:</strong> FastAPI (Python 3.11+)</li>
-            <li><strong>Server:</strong> Uvicorn High-Concurrency ASGI</li>
-            <li><strong>Validation:</strong> Pydantic v2 Schemas</li>
-            <li><strong>Auth:</strong> OAuth2 JWT (HS256) + Bcrypt</li>
-            <li><strong>CORS:</strong> Production regex middleware</li>
-          </ul>
-        </div>
-        <div class="card" style="border-top: 3px solid var(--coral);">
-          <div class="card-title" style="color: var(--coral);">ANALYTICS & AI CORE</div>
-          <ul class="bullet-list">
-            <li><strong>Graph Engine:</strong> NetworkX multi-hop</li>
-            <li><strong>ETL:</strong> Pandas + OpenPyXL tabular parsers</li>
-            <li><strong>AI Model:</strong> GPT-4o-mini (Grounded RAG)</li>
-            <li><strong>Failover:</strong> Offline deterministic rule engine</li>
-            <li><strong>Profiles:</strong> JSON Heuristic Weight Profiles</li>
+            <li><strong>User Interface (React 18 + Vite SPA):</strong> Dual UX Cockpit: Tactical Dark Mode for analysts + Government Skin for formal court filing.</li>
+            <li><strong>REST APIs (FastAPI + Uvicorn):</strong> High-concurrency ASGI server with OAuth2 JWT Auth, Pydantic v2 validation, and CORS middleware.</li>
+            <li><strong>Analytics Engine (NetworkX + Pandas):</strong> Multi-hop graph builder, E.164 phone normalization, and scam-profile risk heuristics.</li>
+            <li><strong>Persistence & Reports (SQLAlchemy + ReportLab):</strong> Case database with SHA-256 hash sealing and court-admissible vector PDF directives.</li>
           </ul>
         </div>
         <div class="card" style="border-top: 3px solid var(--emerald);">
-          <div class="card-title" style="color: var(--emerald);">DATABASE & REPORTS</div>
+          <div class="card-title" style="color: var(--emerald);">ACTUAL GITHUB TECH STACK</div>
           <ul class="bullet-list">
-            <li><strong>ORM:</strong> SQLAlchemy (PostgreSQL / SQLite)</li>
-            <li><strong>PDF Core:</strong> ReportLab Vector Engine</li>
-            <li><strong>Fallback:</strong> WeasyPrint CSS Paged Media</li>
-            <li><strong>Integrity:</strong> SHA-256 hash sealing</li>
-            <li><strong>Security:</strong> PDF password encryption</li>
+            <li><strong>Frontend:</strong> React 18, Vite 5, Tailwind CSS, React Router v6, Lucide Icons.</li>
+            <li><strong>Backend Server:</strong> Python 3.11+, FastAPI (ASGI), Uvicorn High-Concurrency Server.</li>
+            <li><strong>Graph & Analytics:</strong> NetworkX (multi-hop graph theory), Pandas, OpenPyXL.</li>
+            <li><strong>AI Co-Pilot:</strong> GPT-4o-mini with Grounded RAG + 100% Offline Rule Engine Fallback.</li>
+            <li><strong>Document Engine:</strong> ReportLab Vector PDF Generator (with WeasyPrint fallback).</li>
+            <li><strong>Security:</strong> OAuth2 JWT (HS256), Bcrypt Password Hashing, SHA-256 Verification.</li>
           </ul>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 7: WHAT MAKES US DIFFERENT -->
+    <!-- SLIDE 7: INNOVATION & IMPACT -->
     <div class="slide" id="slide-7">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Competitive Advantage</div>
-          <div class="title">Evidence-Backed Technical Differentiators</div>
+          <div class="tag">Innovation & Impact</div>
+          <div class="title">Why TraceX Wins: Operational Reality & Governance Impact</div>
         </div>
         <div class="header-right">EPINOIA '26 • 07 / 09</div>
       </div>
       <div class="grid-2">
         <div class="card" style="border-left: 3px solid var(--cyan);">
-          <div class="card-title" style="color: var(--cyan);">1. ZERO-DISRUPTION POLICE WORKFLOW</div>
-          <p class="card-desc">
-            Conventional forensic tools require custom hardware or expensive proprietary database formats. TraceX works directly with raw Excel dumps, CDR text files, and bank statements that officers already receive daily from telecom and banking nodal officers.
-          </p>
+          <div class="card-title" style="color: var(--cyan);">KEY TECHNICAL INNOVATIONS</div>
+          <ul class="bullet-list">
+            <li><strong>Zero-Disruption Police Workflow:</strong> Works natively with raw Excel and CDR dumps police already receive daily. No proprietary database formatting required.</li>
+            <li><strong>Dual-Engine Resilient AI:</strong> Grounded RAG strictly constrained to case evidence + a 100% offline deterministic rule engine fallback for zero courtroom hallucinations.</li>
+            <li><strong>Dual Operational UX:</strong> Tactical Dark SOC cockpit for forensic analysts + Minimalist Standard Government skin for senior administrative review.</li>
+          </ul>
         </div>
         <div class="card" style="border-left: 3px solid var(--emerald);">
-          <div class="card-title" style="color: var(--emerald);">2. DUAL-ENGINE RESILIENT AI (NO HALLUCINATIONS)</div>
-          <p class="card-desc">
-            Most AI prototypes break when APIs fail or invent fake case facts. TraceX uses strict RAG prompting where the LLM is constrained to case data, backed by a 100% offline deterministic rule engine fallback for courtroom evidentiary integrity.
-          </p>
-        </div>
-        <div class="card" style="border-left: 3px solid var(--purple);">
-          <div class="card-title" style="color: var(--purple);">3. AUTOMATED CROSS-CASE SYNDICATE DETECTION</div>
-          <p class="card-desc">
-            While standard police tools analyze cases in isolation, TraceX automatically correlates entities across different FIRs to reveal multi-district mule rings, shared phone numbers, and common fraud infrastructure.
-          </p>
-        </div>
-        <div class="card" style="border-left: 3px solid var(--amber);">
-          <div class="card-title" style="color: var(--amber);">4. COURT-READY STATUTORY DIRECTIVES</div>
-          <p class="card-desc">
-            TraceX doesn't just show visual charts; it automates legal action. Generating Section 91 CrPC and Section 69A IT Act orders with SHA-256 hashes and password encryption transforms analytical insight into immediate law enforcement action.
-          </p>
+          <div class="card-title" style="color: var(--emerald);">MEASURABLE REAL-WORLD IMPACT</div>
+          <ul class="bullet-list">
+            <li><strong>For Investigating Officers:</strong> Cuts evidence parsing and correlation from 48+ hours to under 3 minutes, solving the Golden Hour bottleneck.</li>
+            <li><strong>For Cyber Crime Victims:</strong> Freezes destination mule accounts before money is laundered through ATMs, drastically improving recovery rates.</li>
+            <li><strong>For Police Leadership & Courts:</strong> Produces court-admissible forensic dossiers sealed with SHA-256 hashes to secure high conviction rates.</li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 8: IMPACT & ROADMAP -->
+    <!-- SLIDE 8: DEDICATED TEAM SLIDE -->
     <div class="slide" id="slide-8">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Impact & Scalability</div>
-          <div class="title">Measurable Impact & Future Growth Scope</div>
+          <div class="tag">Team & Ownership</div>
+          <div class="title">Team Thunderbytes • Shri Vaishnav Vidyapeeth Vishwavidyalaya</div>
         </div>
         <div class="header-right">EPINOIA '26 • 08 / 09</div>
       </div>
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title" style="color: var(--cyan);">STAKEHOLDER IMPACT</div>
-          <ul class="bullet-list">
-            <li><strong>Investigating Officers (IOs):</strong> Cuts evidence parsing and spreadsheet matching from 48+ hours to under 3 minutes, accelerating triage.</li>
-            <li><strong>Cyber Fraud Victims:</strong> Immediate identification of destination accounts allows freezing funds during the Golden Hour before cash is laundered.</li>
-            <li><strong>Police Leadership:</strong> Standardized, tamper-evident forensic dossiers with SHA-256 hash verification for charge sheets.</li>
-            <li><strong>State Cyber Coordination (I4C):</strong> Reveals statewide criminal syndicates operating across city and district jurisdictions.</li>
-          </ul>
+      <div class="grid-2x2">
+        <div class="card" style="border-left: 3px solid var(--cyan);">
+          <div class="card-title" style="color: var(--cyan);">Ankit Tank</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">Team Leader & Product Strategist</div>
+          <div style="font-size: 0.8rem; color: var(--cyan-light); margin-bottom: 0.5rem;">ankittank9977@gmail.com &nbsp;•&nbsp; +91 9977577014</div>
+          <p class="card-desc">Lead coordination, legal workflow research, product scope, and police operational requirements.</p>
         </div>
-        <div class="card">
-          <div class="card-title" style="color: var(--emerald);">PHASED SCALABILITY ROADMAP</div>
-          <ul class="bullet-list">
-            <li><strong>Currently Implemented (v1.0 Ready):</strong> Full multi-format ingestion, multi-hop graph, scam-profile risk scoring, ReportLab statutory PDFs, dual UX, AI chat.</li>
-            <li><strong>Phase 2: NCRP / 1930 API Integration:</strong> Direct webhook connector to National Cyber Crime Reporting Portal for real-time complaint ingestion.</li>
-            <li><strong>Phase 3: Telecom Tower Streaming:</strong> Real-time cell-tower triangulation and automated Subscriber Detail Record (SDR) lookup via telecom APIs.</li>
-            <li><strong>Phase 4: Crypto / Blockchain Tracking:</strong> Automated tracking for crypto-wallet hops and P2P crypto exchanges used in international scam laundering.</li>
-          </ul>
+        <div class="card" style="border-left: 3px solid var(--purple);">
+          <div class="card-title" style="color: var(--purple);">Krishna Prajapat</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">System Architect & Frontend Lead</div>
+          <div style="font-size: 0.8rem; color: var(--cyan-light); margin-bottom: 0.5rem;">krishnaaaprajapattt@gmail.com &nbsp;•&nbsp; LinkedIn: krishna-prajapat-k2102</div>
+          <p class="card-desc">React 18 architecture, interactive SVG network graph visualization, state engine, and deployment.</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--amber);">
+          <div class="card-title" style="color: var(--amber);">Avnish Sharma</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">Backend & Correlation Engine Lead</div>
+          <div style="font-size: 0.8rem; color: var(--cyan-light); margin-bottom: 0.5rem;">avnishsharma4316@gmail.com &nbsp;•&nbsp; LinkedIn: avnish-sharma-92a964376</div>
+          <p class="card-desc">FastAPI backend, NetworkX multi-hop correlation engine, E.164 phone & UPI ingestion parsers.</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--emerald);">
+          <div class="card-title" style="color: var(--emerald);">Tarun Pandya</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">Forensics & Risk Modeling Lead</div>
+          <div style="font-size: 0.8rem; color: var(--cyan-light); margin-bottom: 0.5rem;">pandyatarun65@gmail.com &nbsp;•&nbsp; LinkedIn: tarun-pandya-9b91523a4</div>
+          <p class="card-desc">ReportLab statutory legal PDF generation, scam-profile risk scoring models, test validation.</p>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 9: CLOSING -->
+    <!-- SLIDE 9: DEDICATED DEMO & CLOSING -->
     <div class="slide" id="slide-9">
       <div class="slide-header">
         <div class="header-left">
-          <div class="tag">Conclusion & Pitch Summary</div>
-          <div class="title">TraceX: Leveling the Playing Field in Cyber Warfare</div>
+          <div class="tag">Demonstration & Verification</div>
+          <div class="title">Live Demo, Open-Source Codebase & Final Synthesis</div>
         </div>
         <div class="header-right">EPINOIA '26 • 09 / 09</div>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 1.25rem; flex: 1;">
-        <div class="card" style="background: rgba(15, 23, 42, 0.9); border-color: var(--cyan); padding: 1.5rem;">
-          <div class="card-title" style="color: var(--cyan);">THE SYNTHESIS: PROBLEM ➔ SOLUTION ➔ TECH ➔ IMPACT</div>
-          <blockquote style="font-size: 1.15rem; font-style: italic; font-weight: 600; color: #fff; margin-top: 0.5rem; line-height: 1.5;">
-            "Cyber criminals operate at machine speed. Law enforcement can no longer investigate at human speed. TraceX transforms raw, disconnected evidence into immediate, court-admissible legal action within the Golden Hour."
-          </blockquote>
+      <div class="grid-2" style="margin-bottom: 1.2rem;">
+        <div class="card" style="border-top: 3px solid var(--emerald);">
+          <div class="card-title" style="color: var(--emerald);">VERIFIED PROJECT ASSETS</div>
+          <ul class="bullet-list">
+            <li><strong>Live Deployment:</strong> <a href="https://tracex-frontend-3.onrender.com/" target="_blank" style="color: var(--cyan-light); font-weight: 600;">tracex-frontend-3.onrender.com</a></li>
+            <li><strong>Officer Test Login:</strong> Badge ID: <code style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">MP-IO-4471</code> &nbsp;|&nbsp; Password: <code style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">demo1234</code></li>
+            <li><strong>Video Walkthrough:</strong> <a href="https://youtu.be/oUuxdL-CVBA" target="_blank" style="color: var(--cyan-light); font-weight: 600;">youtu.be/oUuxdL-CVBA</a></li>
+            <li><strong>GitHub Repository:</strong> <a href="https://github.com/Krishnaa-21/tracex" target="_blank" style="color: var(--cyan-light); font-weight: 600;">github.com/Krishnaa-21/tracex</a></li>
+          </ul>
         </div>
-
-        <div class="grid-3">
-          <div class="card" style="border-top: 3px solid var(--emerald);">
-            <div class="card-title" style="color: var(--emerald);">LIVE DEPLOYMENT</div>
-            <ul class="bullet-list">
-              <li><strong>URL:</strong> <a href="https://tracex-frontend-3.onrender.com/" target="_blank" style="color: var(--cyan-muted);">tracex-frontend-3.onrender.com</a></li>
-              <li><strong>Badge ID:</strong> <code style="color: #fff;">MP-IO-4471</code></li>
-              <li><strong>Password:</strong> <code style="color: #fff;">demo1234</code></li>
-              <li>Pre-seeded with active cyber fraud investigations.</li>
-            </ul>
-          </div>
-          <div class="card" style="border-top: 3px solid var(--cyan);">
-            <div class="card-title" style="color: var(--cyan);">REPOSITORY & VIDEO</div>
-            <ul class="bullet-list">
-              <li><strong>GitHub:</strong> <a href="https://github.com/Krishnaa-21/tracex" target="_blank" style="color: var(--cyan-muted);">github.com/Krishnaa-21/tracex</a></li>
-              <li><strong>Video:</strong> <a href="https://youtu.be/oUuxdL-CVBA" target="_blank" style="color: var(--cyan-muted);">youtu.be/oUuxdL-CVBA</a></li>
-              <li>Full automated test suite and documentation included.</li>
-            </ul>
-          </div>
-          <div class="card" style="border-top: 3px solid var(--purple);">
-            <div class="card-title" style="color: var(--purple);">SUBMISSION CONTACT</div>
-            <ul class="bullet-list">
-              <li><strong>Team:</strong> Thunderbytes</li>
-              <li><strong>Leader:</strong> Ankit Tank (+91 9977577014)</li>
-              <li><strong>Email:</strong> ankittank9977@gmail.com</li>
-              <li><strong>Institution:</strong> SVVV, Indore</li>
-            </ul>
-          </div>
+        <div class="card" style="border-top: 3px solid var(--cyan);">
+          <div class="card-title" style="color: var(--cyan);">WHAT YOU WILL SEE IN THE DEMO</div>
+          <ul class="bullet-list">
+            <li><strong>1. Multi-Format Evidence Ingestion:</strong> Upload raw bank Excel sheets and CDR logs into an active case.</li>
+            <li><strong>2. Real-Time Network Graph:</strong> Automatic force-directed correlation clustering suspect phones, accounts, and IPs.</li>
+            <li><strong>3. Dynamic Threat Scoring:</strong> Composite 0-100 risk score calculation highlighting mule accounts.</li>
+            <li><strong>4. One-Click Statutory Orders:</strong> Instant generation of court-admissible Section 91 CrPC Bank Freeze directives.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="background: rgba(18, 28, 47, 0.9); border-color: var(--cyan); padding: 1rem 1.5rem; text-align: center;">
+        <div style="font-size: 1.05rem; font-style: italic; font-weight: 600; color: #fff;">
+          "Cyber criminals operate at machine speed. Law enforcement can no longer investigate at human speed. TraceX levels the playing field."
         </div>
       </div>
     </div>
@@ -619,7 +537,7 @@
     <div id="slide-indicator">01 / 09</div>
     <button class="btn" onclick="nextSlide()">Next ▶</button>
     <button class="btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
-    <button class="btn" onclick="window.print()">⎙ Print / Save PDF</button>
+    <button class="btn" onclick="window.print()">⎙ Print / PDF</button>
   </div>
 
   <script>
