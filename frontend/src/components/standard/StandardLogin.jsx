@@ -9,8 +9,8 @@ import { Notice } from "./StandardUI";
 /** Standard Mode sign-in page. Same credentials flow as the Analysis Mode login. */
 export default function StandardLogin() {
   const navigate = useNavigate();
-  const [badgeId, setBadgeId] = useState("MP-IO-4471");
-  const [password, setPassword] = useState("demo1234");
+  const [badgeId, setBadgeId] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -83,11 +83,11 @@ export default function StandardLogin() {
                 {error && <Notice tone="danger" inline title="Sign-in failed">{error}</Notice>}
                 <div className="std-field">
                   <label className="std-label" htmlFor="std-badge">Officer / Badge ID</label>
-                  <input id="std-badge" className="std-input std-mono" autoComplete="username" value={badgeId} onChange={(e) => setBadgeId(e.target.value)} />
+                  <input id="std-badge" className="std-input std-mono" autoComplete="username" placeholder="Enter Officer ID" value={badgeId} onChange={(e) => setBadgeId(e.target.value)} />
                 </div>
                 <div className="std-field">
                   <label className="std-label" htmlFor="std-password">Password</label>
-                  <input id="std-password" type="password" className="std-input" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <input id="std-password" type="password" className="std-input" autoComplete="current-password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <button type="submit" className="std-btn" disabled={isLoading}>
                   {isLoading ? "Authenticating…" : "Secure sign-in"}

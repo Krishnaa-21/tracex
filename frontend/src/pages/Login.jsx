@@ -30,8 +30,8 @@ export default function Login() {
   const { mode, setMode } = useMode ? useMode() : { mode: "analysis", setMode: () => {} };
   const isStandardMode = mode === "standard";
 
-  const [badgeId, setBadgeId] = useState("MP-IO-4471");
-  const [password, setPassword] = useState("demo1234");
+  const [badgeId, setBadgeId] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [bootText, setBootText] = useState("");
@@ -219,11 +219,11 @@ export default function Login() {
                     required
                     value={badgeId}
                     onChange={(e) => setBadgeId(e.target.value)}
-                    placeholder="e.g. MP-IO-4471"
+                    placeholder="Enter Officer ID"
                     className="w-full px-3 py-2 text-[13px] bg-white border border-[#CBD5E1] rounded text-[#0F172A] placeholder-[#94A3B8] focus:border-[#0B3B60] focus:ring-1 focus:ring-[#0B3B60] outline-none transition-all font-mono"
                   />
                   <span className="text-[10px] text-[#64748B] mt-1 block">
-                    Assigned nodal officer credential (e.g. MP-IO-4471 for Bhopal Cyber Cell)
+                    Assigned nodal officer credential
                   </span>
                 </div>
 
@@ -444,7 +444,7 @@ export default function Login() {
               required
               value={badgeId}
               onChange={(e) => setBadgeId(e.target.value)}
-              placeholder="e.g. MP-IO-4471"
+              placeholder="Enter Officer ID"
               className="w-full px-3.5 py-2.5 text-[13px] font-mono rounded transition-all"
               style={{
                 background: "rgba(0,0,0,0.50)",
