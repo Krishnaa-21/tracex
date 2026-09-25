@@ -25,7 +25,9 @@ function copyIndexTo404() {
 export default defineConfig({
   plugins: [react(), copyIndexTo404()],
   server: {
+    host: true,
     port: 5173,
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",
@@ -34,7 +36,9 @@ export default defineConfig({
     },
   },
   preview: {
+    host: true,
     port: 5173,
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",
