@@ -2,7 +2,7 @@ name: Keep TraceX Backend Awake
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -13,8 +13,9 @@ jobs:
       - name: Ping TraceX Backend
         run: |
           URL="https://tracex-backend-3.onrender.com"
+          
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
-
+          
           echo "Backend returned HTTP status: $STATUS"
 
           if [ "$STATUS" -eq 200 ]; then
