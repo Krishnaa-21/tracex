@@ -11,3 +11,4 @@ ENV/
 *.egg-info/
 ppt/
 *.patch
+*:Zone.Identifier
