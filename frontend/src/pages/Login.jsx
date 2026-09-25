@@ -27,7 +27,7 @@ function CircuitLine({ style }) {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { mode, setMode } = useMode ? useMode() : { mode: "analysis", setMode: () => {} };
+  const { mode, setMode } = useMode ? useMode() : { mode: "standard", setMode: () => {} };
   const isStandardMode = mode === "standard";
 
   const [badgeId, setBadgeId] = useState("");
@@ -35,6 +35,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [bootText, setBootText] = useState("");
+  const [topAlert, setTopAlert] = useState(null);
 
   // Boot sequence text animation for Analysis Mode
   useEffect(() => {
@@ -105,7 +106,73 @@ export default function Login() {
   ────────────────────────────────────────────────────────────────────────── */
   if (isStandardMode) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9] flex flex-col justify-between text-[#0F172A] font-sans antialiased">
+      <div className="min-h-screen bg-[#F1F5F9] flex flex-col justify-between text-[#0F172A] font-sans antialiased relative">
+        {/* Top notification popup */}
+        {topAlert && (
+          <div
+            role="alert"
+            style={{
+              position: "fixed",
+              top: "16px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9999,
+              width: "min(92vw, 540px)",
+              backgroundColor: "#FFFFFF",
+              border: "2px solid #0B3B60",
+              borderRadius: "8px",
+              boxShadow: "0 10px 30px rgba(11, 42, 69, 0.25)",
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "14px",
+              animation: "fadeIn 0.2s ease-in-out",
+            }}
+          >
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                backgroundColor: "#E6F0FA",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                color: "#0B3B60",
+                fontWeight: "bold",
+                fontSize: "18px",
+              }}
+            >
+              ℹ
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#0B3B60" }}>
+                {topAlert.title}
+              </h3>
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#334155", lineHeight: "1.5" }}>
+                {topAlert.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTopAlert(null)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#64748B",
+                fontSize: "18px",
+                cursor: "pointer",
+                padding: "4px",
+                lineHeight: 1,
+              }}
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Top Government Strip with Tricolor Accent */}
         <header className="w-full bg-white border-b border-[#CBD5E1] shadow-xs">
           {/* Indian Tricolor Bar */}
@@ -219,11 +286,11 @@ export default function Login() {
                     required
                     value={badgeId}
                     onChange={(e) => setBadgeId(e.target.value)}
-                    placeholder="Enter Officer ID"
+                    placeholder="Enter Officer / Badge ID"
                     className="w-full px-3 py-2 text-[13px] bg-white border border-[#CBD5E1] rounded text-[#0F172A] placeholder-[#94A3B8] focus:border-[#0B3B60] focus:ring-1 focus:ring-[#0B3B60] outline-none transition-all font-mono"
                   />
                   <span className="text-[10px] text-[#64748B] mt-1 block">
-                    Assigned nodal officer credential
+                    Assigned nodal officer credential (e.g. Bhopal Cyber Cell)
                   </span>
                 </div>
 
@@ -271,7 +338,10 @@ export default function Login() {
               <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[11.5px] text-[#0B3B60]">
                 <button
                   type="button"
-                  onClick={() => alert("Please contact your State Police IT Admin / Nodal Desk for password reset.")}
+                  onClick={() => setTopAlert({
+                    title: "Password Reset Request",
+                    message: "Please contact your System Administrator to reset your password. Provide your Officer Badge ID and nodal station credentials for verification.",
+                  })}
                   className="hover:underline cursor-pointer"
                 >
                   Forgot Credentials?
@@ -279,7 +349,10 @@ export default function Login() {
                 <span className="text-[#CBD5E1]">•</span>
                 <button
                   type="button"
-                  onClick={() => alert("Emergency Helpline: 1930 | Operational Desk: nodal@cybercrime.gov.in")}
+                  onClick={() => setTopAlert({
+                    title: "Contact System Administrator",
+                    message: "Emergency Helpline: 1930 | Operational Desk: nodal@cybercrime.gov.in | Station Extension: 401.",
+                  })}
                   className="hover:underline cursor-pointer"
                 >
                   Contact Nodal Officer
@@ -316,6 +389,74 @@ export default function Login() {
       className="min-h-screen flex flex-col justify-center items-center px-4 py-8 overflow-hidden relative"
       style={{ background: "linear-gradient(135deg, #03050C 0%, #070B17 50%, #05070F 100%)" }}
     >
+      {/* Top popup notification in Analysis Mode */}
+      {topAlert && (
+        <div
+          role="alert"
+          style={{
+            position: "fixed",
+            top: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            width: "min(92vw, 520px)",
+            backgroundColor: "rgba(8, 14, 28, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(0, 212, 255, 0.6)",
+            borderRadius: "10px",
+            boxShadow: "0 0 35px rgba(0, 212, 255, 0.25), 0 10px 40px rgba(0, 0, 0, 0.8)",
+            padding: "16px 20px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "14px",
+            animation: "fadeIn 0.2s ease-in-out",
+          }}
+        >
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(0, 212, 255, 0.12)",
+              border: "1px solid rgba(0, 212, 255, 0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              color: "#00D4FF",
+              fontWeight: "bold",
+              fontSize: "18px",
+            }}
+          >
+            🛡️
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#00D4FF", fontFamily: "var(--font-mono, monospace)" }}>
+              {topAlert.title}
+            </h3>
+            <p style={{ margin: 0, fontSize: "12.5px", color: "#CBD5E1", lineHeight: "1.5" }}>
+              {topAlert.message}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTopAlert(null)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(0, 212, 255, 0.6)",
+              fontSize: "18px",
+              cursor: "pointer",
+              padding: "4px",
+              lineHeight: 1,
+            }}
+            title="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* Top right Mode Switcher */}
       <div className="absolute top-4 right-4 z-50 flex items-center bg-[#07263F]/80 p-0.5 rounded-full border border-cyan-500/30 shadow-lg backdrop-blur-md">
         <button
@@ -444,7 +585,7 @@ export default function Login() {
               required
               value={badgeId}
               onChange={(e) => setBadgeId(e.target.value)}
-              placeholder="Enter Officer ID"
+              placeholder="Enter Officer Badge ID"
               className="w-full px-3.5 py-2.5 text-[13px] font-mono rounded transition-all"
               style={{
                 background: "rgba(0,0,0,0.50)",
@@ -532,22 +673,29 @@ export default function Login() {
         <div className="mt-5 pt-4 flex items-center justify-between text-[11px]" style={{ borderTop: "1px solid rgba(0,212,255,0.10)" }}>
           <button
             type="button"
-            onClick={() => alert("Please contact your departmental IT administrator to reset credentials.")}
+            id="login-forgot-password-btn"
+            onClick={() => setTopAlert({
+              title: "Password Reset Request",
+              message: "Please contact your System Administrator to reset your password. Provide your Officer Badge ID and nodal station credentials for verification.",
+            })}
             className="transition-colors hover:underline cursor-pointer"
-            style={{ color: "rgba(0,212,255,0.50)" }}
-            onMouseEnter={(e) => (e.target.style.color = "rgba(0,212,255,0.90)")}
-            onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.50)")}
+            style={{ color: "rgba(0,212,255,0.70)" }}
+            onMouseEnter={(e) => (e.target.style.color = "#00D4FF")}
+            onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.70)")}
           >
             Forgot password?
           </button>
           <span style={{ color: "rgba(0,212,255,0.20)" }}>•</span>
           <button
             type="button"
-            onClick={() => alert("For operations room support, contact State Cyber Cell Desk (Ext 401).")}
+            onClick={() => setTopAlert({
+              title: "Contact System Administrator",
+              message: "For operations room assistance or password recovery, contact State Cyber Cell Desk (Ext 401) or email admin@cybercrime.gov.in.",
+            })}
             className="transition-colors hover:underline cursor-pointer"
-            style={{ color: "rgba(0,212,255,0.50)" }}
-            onMouseEnter={(e) => (e.target.style.color = "rgba(0,212,255,0.90)")}
-            onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.50)")}
+            style={{ color: "rgba(0,212,255,0.70)" }}
+            onMouseEnter={(e) => (e.target.style.color = "#00D4FF")}
+            onMouseLeave={(e) => (e.target.style.color = "rgba(0,212,255,0.70)")}
           >
             Contact administrator
           </button>
