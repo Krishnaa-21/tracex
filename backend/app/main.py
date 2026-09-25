@@ -11,6 +11,7 @@ from app.db.models import (
     Entity,
     EntityLink,
     CaseSummary,
+    AgentRun,
 )
 from app.db.seed import seed_data
 from app.db.seed_demo import seed_demo_cases
@@ -21,6 +22,7 @@ from app.api.routes.correlation import router as correlation_router
 from app.api.routes.geo import router as geo_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.chat import router as chat_router
+from app.api.routes.agents import router as agents_router
 
 
 @asynccontextmanager
@@ -57,9 +59,8 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://localhost:4173",
         "http://127.0.0.1:4173",
-        "https://tracex-frontend-3.onrender.com",
     ],
-    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?|https://.*\.onrender\.com)$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,6 +74,7 @@ app.include_router(correlation_router, prefix="/api")
 app.include_router(geo_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(agents_router, prefix="/api")
 
 
 @app.get("/")

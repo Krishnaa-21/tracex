@@ -366,6 +366,13 @@ def _case_block(cd: CaseData, max_entities: int = 30, max_links: int = 20) -> st
     ]
     if cd.summary and cd.summary.narrative_text:
         lines.append(f"- Narrative: {clean(cd.summary.narrative_text, 700)}")
+    files = list(getattr(c, "evidence_files", None) or [])
+    if files:
+        lines.append(f"Evidence files ({len(files)}):")
+        for f in files[:10]:
+            lines.append(
+                f"  * {clean(f.original_filename, 50)} — {enum_val(f.evidence_category)}, {enum_val(f.upload_status)}"
+            )
     if cd.entities:
         lines.append("Entities (highest risk first):")
         for e in cd.entities[:max_entities]:
@@ -419,9 +426,13 @@ def build_llm_context(
     else:
         parts.append("Indicators shared across cases: none")
 
+    detail_cases: List[Case] = list(scope_cases[:MAX_CASE_MENTIONS])
     if ui_case:
         parts.append(f"\nOFFICER CURRENTLY HAS OPEN: {ui_case.case_number}")
-    for c in scope_cases[:MAX_CASE_MENTIONS]:
+        # Even for portfolio-style questions the LLM should see the open case in full.
+        if all(ui_case.id != c.id for c in detail_cases):
+            detail_cases.insert(0, ui_case)
+    for c in detail_cases:
         parts.append("\n" + _case_block(load_case_data(db, c)))
 
     if entity_hits:

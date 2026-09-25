@@ -1,8 +1,9 @@
 """Chat assistant engine.
 
-Flow: resolve scope (open case / named case(s) / all cases) -> build grounded
-answer from the database -> optionally let a configured LLM phrase a richer answer
-from the same grounded context -> fall back to the data-driven answer on any failure.
+Flow: resolve scope (open case / named case(s) / all cases) -> build a grounded
+context from the database -> the LLM reasons over that context and writes the answer.
+The deterministic rules engine below is ONLY a fallback: it runs when no LLM is
+configured or the LLM call fails (and the failure reason is reported, not hidden).
 """
 import logging
 import re
@@ -15,6 +16,7 @@ from app.db.models import Case, Entity
 from app.services.ai import chat_context as ctx
 from app.services.ai.chat_context import CaseData, clean, enum_val, pretty, risk_text
 from app.services.ai.chat_llm import ask_llm, llm_configured
+from app.services.ai.llm_client import LLMResult
 
 logger = logging.getLogger("tracex.chat")
 
@@ -27,7 +29,8 @@ class ChatResult:
     case_id: Optional[int] = None
     case_number: Optional[str] = None
     suggested: List[str] = field(default_factory=list)
-    source: str = "rules"  # rules | llm | rules_fallback
+    source: str = "rules"  # llm | rules (LLM not configured) | rules_fallback (LLM failed)
+    llm_error: Optional[str] = None  # short error code when the LLM was configured but failed
 
 
 def _has(q: str, pattern: str) -> bool:
@@ -391,6 +394,12 @@ def _answer_entity_lookup(db: Session, hits: List[Entity]) -> Tuple[str, List[st
 # --------------------------------------------------------------------------- #
 # Orchestration
 # --------------------------------------------------------------------------- #
+def _llm_suggestions(mode: str) -> List[str]:
+    if mode == "case":
+        return ["What are the high-risk entities?", "Are there cross-case syndicate links?", "What legal directives are recommended?"]
+    return ["Which cases share entities?", "Which is the highest risk case?", "List active investigations"]
+
+
 def answer_chat(db: Session, message: str, ui_case_id: Optional[int] = None, history: Optional[List[Any]] = None) -> ChatResult:
     q = message.lower().strip()
     notes: List[str] = []
@@ -427,7 +436,42 @@ def answer_chat(db: Session, message: str, ui_case_id: Optional[int] = None, his
         scope_cases = [ui_case] + scope_cases
         mode = "compare"
 
-    # ---- grounded (data-driven) answer -----------------------------------
+    focus = scope_cases[0] if mode == "case" else None
+    focus_id = focus.id if focus else None
+    focus_number = focus.case_number if focus else None
+
+    def finish(result: ChatResult) -> ChatResult:
+        if notes:
+            result.response = "\n".join(notes) + "\n\n" + result.response
+        return result
+
+    # ---- 1. PRIMARY PATH: the LLM reasons over the case context -----------
+    llm_error: Optional[str] = None
+    if llm_configured():
+        try:
+            context = ctx.build_llm_context(db, scope_cases, entity_hits, ui_case)
+            llm = ask_llm(message, context, history)
+        except Exception as exc:  # never let the AI layer break the chat
+            logger.exception("Chat LLM context/call failed")
+            llm = LLMResult(error=f"context_error:{exc.__class__.__name__}")
+        if llm.text:
+            return finish(
+                ChatResult(
+                    response=llm.text,
+                    case_id=focus_id,
+                    case_number=focus_number,
+                    suggested=_llm_suggestions(mode),
+                    source="llm",
+                )
+            )
+        llm_error = llm.error or "unknown"
+        logger.warning("Falling back to rules engine (LLM error: %s)", llm_error)
+    else:
+        logger.warning(
+            "LLM not configured (set OPENAI_API_KEY) - chat is answering from the rules engine only"
+        )
+
+    # ---- 2. FALLBACK: deterministic, data-driven answer ---------------------
     if mode == "compare":
         text, sugg = _answer_compare(db, scope_cases)
     elif mode == "case":
@@ -437,29 +481,9 @@ def answer_chat(db: Session, message: str, ui_case_id: Optional[int] = None, his
     else:
         text, sugg = _answer_global(db, q)
 
-    focus = scope_cases[0] if mode == "case" else None
-    result = ChatResult(
-        response=text,
-        case_id=focus.id if focus else None,
-        case_number=focus.case_number if focus else None,
-        suggested=sugg,
-        source="rules",
-    )
-
-    # ---- optional LLM answer ---------------------------------------------
-    if llm_configured():
-        try:
-            context = ctx.build_llm_context(db, scope_cases, entity_hits if mode == "entity" else [], ui_case)
-            llm_text = ask_llm(message, context, history)
-        except Exception:  # never let the AI layer break the chat
-            logger.exception("Chat LLM context/call failed")
-            llm_text = None
-        if llm_text:
-            result.response, result.source = llm_text, "llm"
-        else:
-            result.response += FALLBACK_NOTE
-            result.source = "rules_fallback"
-
-    if notes:
-        result.response = "\n".join(notes) + "\n\n" + result.response
-    return result
+    result = ChatResult(response=text, case_id=focus_id, case_number=focus_number, suggested=sugg, source="rules")
+    if llm_error:
+        result.response += FALLBACK_NOTE
+        result.source = "rules_fallback"
+        result.llm_error = llm_error
+    return finish(result)

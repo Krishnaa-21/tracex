@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
-import httpx
+import logging
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.db.models import Case, CaseSummary, Entity, EntityLink, RiskLevel
 from app.services.correlation.graph_builder import build_case_graph
+from app.services.ai.llm_client import chat_completion, llm_configured
+
+logger = logging.getLogger("tracex.summary")
 
 
 def build_summary_prompt(
@@ -138,38 +140,25 @@ def generate_case_summary(case_id: int, db: Session) -> CaseSummary:
 
     narrative_text: Optional[str] = None
 
-    # Check if a live LLM API key is provided
-    api_key = (settings.AI_SUMMARY_API_KEY or "").strip()
-    if api_key and api_key != "your_key_here":
-        try:
-            prompt = build_summary_prompt(case, nodes, edges)
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": settings.AI_SUMMARY_MODEL,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a cyber fraud intelligence analyst assisting police investigating officers. Provide concise, clear, and factual case narratives in 2-3 paragraphs.",
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    },
-                ],
-                "temperature": 0.3,
-            }
-            with httpx.Client(timeout=12.0) as client:
-                response = client.post(settings.AI_SUMMARY_API_URL, headers=headers, json=payload)
-                if response.status_code == 200:
-                    resp_json = response.json()
-                    choices = resp_json.get("choices", [])
-                    if choices:
-                        narrative_text = choices[0]["message"]["content"].strip()
-        except Exception:
-            narrative_text = None
+    # Use the LLM (OpenAI by default) when configured; otherwise / on failure use the deterministic summary
+    if llm_configured():
+        prompt = build_summary_prompt(case, nodes, edges)
+        result = chat_completion(
+            [
+                {
+                    "role": "system",
+                    "content": "You are a cyber fraud intelligence analyst assisting police investigating officers. Provide concise, clear, and factual case narratives in 2-3 paragraphs.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+            max_output_tokens=700,
+            timeout=20,
+        )
+        if result.text:
+            narrative_text = result.text
+        else:
+            logger.warning("Case summary LLM unavailable (%s); using deterministic summary", result.error)
 
     # Fall back to deterministic structured summary if no API key or call failed
     if not narrative_text:

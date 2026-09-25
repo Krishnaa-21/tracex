@@ -162,3 +162,22 @@ class CaseSummary(Base):
     generated_at = Column(DateTime, default=utc_now, nullable=False)
 
     case = relationship("Case", back_populates="summaries")
+
+
+class AgentRun(Base):
+    """Audit record of one AI-agent execution against a case (chain-of-custody trail)."""
+
+    __tablename__ = "agent_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    case_id = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
+    agent_id = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False, default="running")  # running | completed | attention | failed | halted
+    summary = Column(Text, nullable=True)
+    result = Column(JSON, default=dict, nullable=True)  # steps, findings, recommendations, metrics, data
+    duration_ms = Column(Integer, nullable=True)
+    triggered_by = Column(Integer, ForeignKey("officers.id"), nullable=True)
+    parent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    case = relationship("Case")
