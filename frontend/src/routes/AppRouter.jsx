@@ -6,12 +6,14 @@ import StandardLogin from "../components/standard/StandardLogin";
 import StandardDashboardPage from "../components/standard/StandardDashboardPage";
 import StandardCorrelationPage from "../components/standard/StandardCorrelationPage";
 import StandardReportsPage from "../components/standard/StandardReportsPage";
+import StandardAgentsPage from "../components/standard/StandardAgentsPage";
 import ChatWidget from "../components/ChatWidget";
 import NewInvestigationModal from "../components/NewInvestigationModal";
 import Login from "../pages/Login";
 import Home from "../pages/Home";
 import ConnectionsGraph from "../pages/ConnectionsGraph";
 import Reports from "../pages/Reports";
+import Agents from "../pages/Agents";
 import { getToken } from "../api/client";
 import { useMode } from "../context/ModeContext";
 
@@ -95,6 +97,7 @@ export default function AppRouter() {
           <Route path="/cases/:caseId/graph" element={<ModeSwitch analysis={<ConnectionsGraph />} standard={<StandardCorrelationPage />} />} />
           <Route path="/reports" element={<Navigate to="/cases/1/reports" replace />} />
           <Route path="/cases/:caseId/reports" element={<ModeSwitch analysis={<Reports />} standard={<StandardReportsPage />} />} />
+          <Route path="/agents" element={<ModeSwitch analysis={<Agents />} standard={<StandardAgentsPage />} />} />
         </Route>
 
         {/* Catch-all fallback */}
