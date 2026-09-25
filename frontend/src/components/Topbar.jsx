@@ -9,6 +9,7 @@ import {
   Layers,
   ArrowRight,
   ChevronDown,
+  Bot,
 } from "lucide-react";
 import { getOfficer, clearAuth, apiClient } from "../api/client";
 import Logo from "./Logo";
@@ -122,6 +123,12 @@ export default function Topbar({ onOpenNewInvestigation }) {
       to: `/cases/${activeCaseId}/reports`,
       icon: FileText,
       isActive: location.pathname.includes("/reports"),
+    },
+    {
+      label: "AI Agents",
+      to: "/agents",
+      icon: Bot,
+      isActive: location.pathname.startsWith("/agents"),
     },
   ];
 

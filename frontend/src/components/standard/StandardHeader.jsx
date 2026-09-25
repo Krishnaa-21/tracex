@@ -110,6 +110,7 @@ export default function StandardHeader({ onOpenNewInvestigation }) {
     { label: s.dashboard, to: "/", active: location.pathname === "/" },
     { label: s.correlation, to: `/cases/${activeCaseId}/graph`, active: location.pathname.includes("/graph") },
     { label: s.reports, to: `/cases/${activeCaseId}/reports`, active: location.pathname.includes("/reports") },
+    { label: s.agents, to: "/agents", active: location.pathname.startsWith("/agents") },
   ];
 
   return (
