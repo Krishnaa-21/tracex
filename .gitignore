@@ -10,5 +10,4 @@ venv/
 ENV/
 *.egg-info/
 ppt/
-.env.example
 *.patch
